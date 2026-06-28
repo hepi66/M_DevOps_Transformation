@@ -1,0 +1,14 @@
+# Virtuelle Umgebung (Sandbox) komplett ignorieren
+venv/
+.venv/
+
+# Sicherheit: Lokale Umgebungsvariablen (API-Keys) NIEMALS hochladen
+.env
+
+# Python-Laufzeit-Cache ignorieren
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Betriebssystem-spezifische Dateien
+Thumbs.db
