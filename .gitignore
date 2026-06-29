@@ -12,3 +12,6 @@ venv/
 
 # Betriebssystem-spezifische Dateien
 Thumbs.db
+
+# Other
+FolderAndFiles.txt
