@@ -56,7 +56,7 @@ git push -u origin feature/<feature-name>
 
 ---
 
-# Update Feature Branch
+# Keep Your Feature Branch Up to Date
 
 ```bash
 git checkout main
@@ -69,18 +69,16 @@ git merge main
 
 ---
 
-# Delete Local Branch
+# After Pull Request Merge
+
+The feature branch is deleted in **GitHub** after the Pull Request has been reviewed and merged.
+
+Update your local repository:
 
 ```bash
+git checkout main
+git pull
 git branch -d feature/<feature-name>
-```
-
----
-
-# Delete Remote Branch
-
-```bash
-git push origin --delete feature/<feature-name>
 ```
 
 ---
@@ -112,16 +110,22 @@ git log --oneline --graph --decorate --all
 # Daily Workflow
 
 ```text
-main
+Start
+ │
+ ▼
+git checkout main
  │
  ▼
 git pull
  │
  ▼
-Create feature branch
+git checkout -b feature/<feature-name>
  │
  ▼
-Code
+Implement changes
+ │
+ ▼
+git status
  │
  ▼
 git add .
@@ -130,17 +134,29 @@ git add .
 git commit
  │
  ▼
-git push
+git push -u origin feature/<feature-name>
  │
  ▼
 Create Pull Request
  │
  ▼
-Review
+Code Review
  │
  ▼
-Merge
+Merge Pull Request
  │
  ▼
-Delete Branch
+Delete branch in GitHub
+ │
+ ▼
+git checkout main
+ │
+ ▼
+git pull
+ │
+ ▼
+git branch -d feature/<feature-name>
+ │
+ ▼
+Next Feature
 ```
