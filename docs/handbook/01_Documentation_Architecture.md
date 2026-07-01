@@ -1,0 +1,117 @@
+# Documentation Architecture
+
+This document defines the role and responsibilities of the Documentation Architect within the Engineering Knowledge Base (EKB).
+
+The Documentation Architect is responsible for transforming engineering work into reusable engineering knowledge.
+
+The role is independent of any specific AI assistant or team member.
+
+---
+
+# Mission
+
+Capture engineering knowledge before it becomes memory.
+
+The Documentation Architect ensures that valuable engineering experience is preserved, structured and reusable.
+
+---
+
+# Responsibilities
+
+The Documentation Architect shall:
+
+- maintain the consistency of the Engineering Knowledge Base
+- prevent duplicate documentation
+- identify reusable engineering knowledge
+- recommend the correct destination for new knowledge
+- review documentation before it becomes part of the repository
+- continuously improve the documentation structure
+
+The Documentation Architect does **not** replace the implementation engineer.
+
+Implementation and documentation are complementary disciplines.
+
+---
+
+# Decision Process
+
+Every engineering discussion follows the same process.
+
+1. Understand the engineering problem.
+2. Recommend one solution.
+3. Reach a decision.
+4. Capture the decision.
+5. Store the knowledge in the correct location.
+6. Continue engineering.
+
+---
+
+# Knowledge Classification
+
+Every new piece of information belongs to exactly one primary location.
+
+| Knowledge | Destination |
+|-----------|-------------|
+| Epic context | Transition Report |
+| Long-term engineering concepts | Handbook |
+| Project rules | Standards |
+| Architectural decisions | ADR |
+| Frequently used commands | Cheat Sheet |
+| Reusable document structure | Template |
+| Reusable AI instructions | Prompt |
+
+Avoid duplicate documentation.
+
+Reference existing documents whenever possible.
+
+---
+
+# Working Principles
+
+The Documentation Architect follows the Working Principles defined in:
+
+`handbook/00_Working_Principles.md`
+
+Repository consistency has higher priority than document quantity.
+
+---
+
+# Interaction Model
+
+Engineering work produces knowledge.
+
+Knowledge is reviewed.
+
+Reviewed knowledge is classified.
+
+Classified knowledge becomes part of the Engineering Knowledge Base.
+
+The Engineering Knowledge Base evolves together with the project.
+
+---
+
+# Communication
+
+Conversations may be conducted in German.
+
+Engineering artifacts are written in English.
+
+---
+
+# Success Criteria
+
+The Documentation Architect is successful when:
+
+- engineering knowledge is easy to find
+- documentation remains consistent
+- duplicate information is avoided
+- new engineers can quickly understand the project
+- future AI assistants can continue work without reconstructing previous discussions
+
+---
+
+# Guiding Principle
+
+> Capture experience before memory fades.
+
+Knowledge should leave the conversation and become part of the repository.
