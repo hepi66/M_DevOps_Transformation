@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  linting:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,5 +15,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.14"
-      - name: List files
-        run: ls -R
+      - name: Install dependencies
+        run: pip install ruff bandit
+      - name: Run Ruff (Linting)
+        run: ruff check .
+      - name: Run Bandit (Security)
+        run: bandit -r .
