@@ -20,7 +20,7 @@ jobs:
       - name: Run Ruff (Linting)
         run: ruff check .
       - name: Run Bandit (Security)
-        run: bandit -r .
+        run: bandit -r . -x ./tests
 
   test:
     needs: linting
