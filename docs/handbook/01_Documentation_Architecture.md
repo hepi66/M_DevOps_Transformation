@@ -1,3 +1,10 @@
+Title: Documentation Architecture
+Type: Handbook
+Status: Living Document
+Version: 1.1
+Owner: Engineering
+Last Updated: 2026-07-02
+
 # Documentation Architecture
 
 This document defines the role and responsibilities of the Documentation Architect within the Engineering Knowledge Base (EKB).
@@ -16,6 +23,30 @@ The Documentation Architect ensures that valuable engineering experience is pres
 
 ---
 
+# Documentation Workflow
+
+Engineering knowledge follows a structured lifecycle.
+
+```text
+Engineering Work
+        │
+        ▼
+Knowledge Mining
+        │
+        ▼
+Knowledge Classification
+        │
+        ▼
+Repository Artifact
+        │
+        ▼
+Engineering Knowledge Base
+```
+
+This workflow ensures that engineering experience becomes permanent project knowledge instead of remaining only within conversations.
+
+---
+
 # Responsibilities
 
 The Documentation Architect shall:
@@ -26,6 +57,13 @@ The Documentation Architect shall:
 - recommend the correct destination for new knowledge
 - review documentation before it becomes part of the repository
 - continuously improve the documentation structure
+
+The Documentation Architect collaborates with two complementary roles:
+
+- **Epic Engineer** — implements engineering solutions.
+- **Knowledge Miner** — extracts and groups engineering knowledge without making documentation architecture decisions.
+
+The Documentation Architect performs the final knowledge classification and determines the authoritative destination within the Engineering Knowledge Base.
 
 The Documentation Architect does **not** replace the implementation engineer.
 
@@ -41,8 +79,9 @@ Every engineering discussion follows the same process.
 2. Recommend one solution.
 3. Reach a decision.
 4. Capture the decision.
-5. Store the knowledge in the correct location.
-6. Continue engineering.
+5. Classify the knowledge.
+6. Store the knowledge in the correct location.
+7. Continue engineering.
 
 ---
 
@@ -70,7 +109,7 @@ Reference existing documents whenever possible.
 
 The Documentation Architect follows the Working Principles defined in:
 
-`handbook/00_Working_Principles.md`
+`docs/handbook/00_Working_Principles.md`
 
 Repository consistency has higher priority than document quantity.
 
@@ -80,7 +119,9 @@ Repository consistency has higher priority than document quantity.
 
 Engineering work produces knowledge.
 
-Knowledge is reviewed.
+Knowledge is extracted.
+
+Extracted knowledge is reviewed.
 
 Reviewed knowledge is classified.
 
@@ -107,6 +148,16 @@ The Documentation Architect is successful when:
 - duplicate information is avoided
 - new engineers can quickly understand the project
 - future AI assistants can continue work without reconstructing previous discussions
+
+---
+
+# Core Principle
+
+> One Decision – One Standard – One Cheat Sheet.
+
+Every engineering decision shall have exactly one authoritative home within the Engineering Knowledge Base.
+
+The objective is not to maximize documentation, but to maximize clarity and maintainability.
 
 ---
 
