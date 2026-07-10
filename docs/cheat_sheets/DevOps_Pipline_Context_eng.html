@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DevOps Pipeline Cheat-Sheet - Personal Reference</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            line-height: 1.4;
+            color: #2d3748;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 25px;
+        }
+        .header-container {
+            border-bottom: 3px solid #0056b3;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #0056b3;
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .subtitle {
+            color: #718096;
+            margin: 4px 0 0 0;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        /* Cheat Sheet Layout */
+        .component-card {
+            margin-bottom: 14px;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #0056b3;
+            border-radius: 6px;
+            background: #f8fafc;
+            padding: 12px 16px;
+        }
+        .component-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            color: #2b6cb0;
+            margin-bottom: 6px;
+        }
+        .component-header svg, .component-header img {
+            width: 18px;
+            height: 18px;
+            vertical-align: middle;
+        }
+        .component-text {
+            font-size: 12.5px;
+            color: #4a5568;
+            margin: 0;
+        }
+        .keyword {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .footer {
+            margin-top: 25px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 6px;
+            text-align: center;
+            color: #a0aec0;
+            font-size: 10px;
+        }
+        @media print {
+            body { padding: 0; }
+            .component-card { background: #ffffff !important; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h1>DevOps Pipeline Context Cheat-Sheet</h1>
+        <p class="subtitle">Internal Quick Overview: From Source Code to Running Image</p>
+    </div>
+
+    <div class="component-card" style="border-left-color: #f05032;">
+        <div class="component-header">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" alt="Git">
+            1. Local Dev (Git)
+        </div>
+        <p class="component-text">
+            Serves as the foundation for <span class="keyword">decentralized version control</span> directly on the developer's workstation. It captures every code change incrementally and allows working in isolated feature branches. Local commits form the initial starting point for the entire deployment cycle.
+        </p>
+    </div>
+
+    <div class="component-card" style="border-left-color: #24292e;">
+        <div class="component-header">
+            <svg viewBox="0 0 24 24" fill="#24292e"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            2. GitHub Remote Repository
+        </div>
+        <p class="component-text">
+            Acts as the central cloud platform and <span class="keyword">Single Source of Truth</span> for the entire project. In addition to hosting the raw code, it manages the bridge to automation via webhooks and event triggers and safeguards code quality through Pull Request workflows.
+        </p>
+    </div>
+
+    <div class="component-card" style="border-left-color: #6e5494;">
+        <div class="component-header">
+            <svg viewBox="0 0 16 16" fill="#6e5494" style="width:16px; height:16px;"><path d="M0 2.5A1.5 1.5 0 0 1 1.5 1h13A1.5 1.5 0 0 1 16 2.5v11a1.5 1.5 0 0 1-1.5 1h-13A1.5 1.5 0 0 1 0 13.5v-11zM1.5 2a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h3v-12h-3zm4 0v12h4v-12h-4zm5 0v12h4a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5h-4z"/></svg>
+            3. GitHub Projects (Scrum)
+        </div>
+        <p class="component-text">
+            Handles the structuring and tracking of the <span class="keyword">agile product backlog</span> within sprints. It translates high-level technical milestones into actionable epics and user stories, visually capturing dependencies and managing sprint planning natively alongside the code.
+        </p>
+    </div>
+
+    <div class="component-card" style="border-left-color: #2088ff;">
+        <div class="component-header">
+            <svg viewBox="0 0 24 24" fill="#2088ff"><path d="M11.53 2.22a.75.75 0 011.06 0l1.97 1.97a.75.75 0 010 1.06l-1.97 1.97a.75.75 0 11-1.06-1.06l.69-.69H8.5a3.5 3.5 0 00-3.5 3.5v1.25a.75.75 0 01-1.5 0V10a5 5 0 015-5h3.69l-.69-.69a.75.75 0 010-1.06zM3.65 13.53a.75.75 0 010 1.06l-1.97 1.97a.75.75 0 01-1.06 0l-1.97-1.97a.75.75 0 111.06-1.06l.69.69v-2.25a5 5 0 015-5h3.69l-.69-.69a.75.75 0 111.06-1.06l1.97 1.97a.75.75 0 010 1.06l-1.97 1.97a.75.75 0 11-1.06-1.06l.69-.69H5.42a3.5 3.5 0 00-3.5 3.5v2.25l.69-.69a.75.75 0 011.04 0zm16.7 1.97a.75.75 0 000-1.06l-1.97-1.97a.75.75 0 10-1.06 1.06l.69.69H14.3a5 5 0 00-5 5v1.25a.75.75 0 001.5 0V19.5a3.5 3.5 0 013.5-3.5h3.69l-.69.69a.75.75 0 001.06 1.06l1.97-1.97z"/><circle cx="12" cy="12" r="3" fill="#2088ff"/></svg>
+            4. GitHub Actions (CI Pipeline)
+        </div>
+        <p class="component-text">
+            Responsible for <span class="keyword">Continuous Integration (CI)</span>. Automatically triggered upon any Git push event, this engine compiles code, runs automated test suites, validates changes, and upon successful execution, builds the immutable Docker container image.
+        </p>
+    </div>
+
+    <div class="component-card" style="border-left-color: #2496ed;">
+        <div class="component-header">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" alt="Docker">
+            5. Docker Packaging & GHCR (Registry)
+        </div>
+        <p class="component-text">
+            Docker encapsulates the application and all its dependencies into a lightweight, <span class="keyword">portable container image</span>. This final artifact is securely pushed to and versioned within the GitHub Container Registry (GHCR), ready to be pulled by the cluster environment.
+        </p>
+    </div>
+
+    <div class="component-card" style="border-left-color: #F47B2A;">
+        <div class="component-header">
+            <svg viewBox="0 0 100 123" fill="none"><path d="M11.7 94.7L0 74.3V31.5L25.3 0l38 6.2-8 13.8-21.7-3.5L11.7 34.6v37.3l5.8 10.1 27.2-15.7V34.9l-5.8-3.4 8-13.8 19.5 11.3v43.7L42.7 85.8 11.7 94.7z" fill="#F47B2A"/><path d="M88.3 94.7l11.7-20.4V31.5L74.7 0l-38 6.2 8 13.8 21.7-3.5 21.9 22.1v37.3l-5.8 10.1-27.2-15.7V34.9l5.8-3.4-8-13.8-19.5 11.3v43.7l23.7 13.1 31 8.9z" fill="#0096D6"/><path d="M50 49.3l-22.3 39 11.7 20.3h41.2L91.3 89.5 50 49.3zm20.8 45.4H29.2l10.4-18.2 10.4 10.2 10.4-10.2 10.4 18.2z" fill="#ECEFF1"/></svg>
+            6. Argo CD (GitOps Reconciliation)
+        </div>
+        <p class="component-text">
+            The core engine of <span class="keyword">Continuous Delivery (CD) using GitOps</span>. It continuously reconciles the declarative desired state stored in the Git repository against the live state of the Kubernetes cluster, instantly auto-correcting or flagging configuration drifts.
+        </p>
+    </div>
+
+    <div class="component-card" style="border-left-color: #326ce5;">
+        <div class="component-header">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg" alt="Kubernetes">
+            7. K3s Kubernetes (Target Cluster)
+        </div>
+        <p class="component-text">
+            A highly lightweight and resource-efficient <span class="keyword">container orchestration runtime environment</span>. It runs the application containers fetched from the registry inside pods, handles routing and scaling, and ensures the resilient operation of the MVP platform.
+        </p>
+    </div>
+
+    <div class="footer">
+        Personal Reference • DevOps Product Owner Context • Dr. Achim Hepberger
+    </div>
+
+</body>
+</html>
