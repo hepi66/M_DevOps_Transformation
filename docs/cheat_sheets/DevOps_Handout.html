@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DevOps Platform Prototype (MVP) - Handout</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            line-height: 1.4;
+            color: #2d3748;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 30px;
+        }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #0056b3;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #0056b3;
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .subtitle {
+            color: #718096;
+            margin: 4px 0 0 0;
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+        .badge-time {
+            background-color: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 6px 14px;
+            border-radius: 0 6px 6px 0;
+            text-align: right;
+        }
+        .badge-time .label {
+            font-size: 10px;
+            color: #2b6cb0;
+            text-transform: uppercase;
+            font-weight: 700;
+            display: block;
+        }
+        .badge-time .value {
+            font-size: 13px;
+            color: #2d3748;
+            font-weight: 700;
+        }
+        h2 {
+            color: #2b6cb0;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 22px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+        }
+        /* Pipeline Visual */
+        .pipeline-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .pipeline-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            text-align: center;
+        }
+        .pipeline-step svg, .pipeline-step img {
+            height: 30px;
+            width: 30px;
+            margin-bottom: 6px;
+        }
+        .pipeline-step span {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .pipeline-arrow {
+            color: #cbd5e0;
+            font-weight: bold;
+            font-size: 16px;
+            padding-bottom: 12px;
+        }
+        /* Table Style */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #f7fafc;
+            color: #4a5568;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 700;
+            padding: 10px 12px;
+            border-bottom: 2px solid #e2e8f0;
+            text-align: left;
+        }
+        td {
+            padding: 12px 12px;
+            border-bottom: 1px solid #edf2f7;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+        .tech-logo-cell {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .tech-logo-cell svg, .tech-logo-cell img {
+            width: 18px;
+            height: 18px;
+            vertical-align: middle;
+            margin-right: 8px;
+            display: inline-block;
+        }
+        /* Lists */
+        ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+        li {
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: #4a5568;
+        }
+        strong {
+            color: #2d3748;
+        }
+        .footer {
+            margin-top: 30px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
+            text-align: center;
+            color: #a0aec0;
+            font-size: 11px;
+        }
+        @media print {
+            body { padding: 5px; }
+            .pipeline-container { background: #ffffff !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div class="header-container">
+        <div>
+            <h1>DevOps Platform Prototype (MVP)</h1>
+            <p class="subtitle">Architecture Handout & Conceptual Proof of Concept</p>
+        </div>
+        <div class="badge-time">
+            <span class="label">Development Period</span>
+            <span class="value">~10 Days (Intensive Project)</span>
+        </div>
+    </div>
+
+    <!-- 1. Pipeline Architecture -->
+    <h2>1. End-to-End GitOps Pipeline</h2>
+    <div class="pipeline-container">
+        <div class="pipeline-step">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" alt="Git">
+            <span>Local Dev (Git)</span>
+        </div>
+        <div class="pipeline-arrow">➔</div>
+        <div class="pipeline-step">
+            <!-- Inline SVG for GitHub -->
+            <svg viewBox="0 0 24 24" fill="#24292e"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            <span>GitHub Repository</span>
+        </div>
+        <div class="pipeline-arrow">➔</div>
+        <div class="pipeline-step">
+            <!-- Inline SVG for GitHub Actions -->
+            <svg viewBox="0 0 24 24" fill="#2088ff"><path d="M11.53 2.22a.75.75 0 011.06 0l1.97 1.97a.75.75 0 010 1.06l-1.97 1.97a.75.75 0 11-1.06-1.06l.69-.69H8.5a3.5 3.5 0 00-3.5 3.5v1.25a.75.75 0 01-1.5 0V10a5 5 0 015-5h3.69l-.69-.69a.75.75 0 010-1.06zM3.65 13.53a.75.75 0 010 1.06l-1.97 1.97a.75.75 0 01-1.06 0l-1.97-1.97a.75.75 0 111.06-1.06l.69.69v-2.25a5 5 0 015-5h3.69l-.69-.69a.75.75 0 111.06-1.06l1.97 1.97a.75.75 0 010 1.06l-1.97 1.97a.75.75 0 11-1.06-1.06l.69-.69H5.42a3.5 3.5 0 00-3.5 3.5v2.25l.69-.69a.75.75 0 011.04 0zm16.7 1.97a.75.75 0 000-1.06l-1.97-1.97a.75.75 0 10-1.06 1.06l.69.69H14.3a5 5 0 00-5 5v1.25a.75.75 0 001.5 0V19.5a3.5 3.5 0 013.5-3.5h3.69l-.69.69a.75.75 0 001.06 1.06l1.97-1.97z"/><circle cx="12" cy="12" r="3" fill="#2088ff"/></svg>
+            <span>GitHub Actions</span>
+        </div>
+        <div class="pipeline-arrow">➔</div>
+        <div class="pipeline-step">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" alt="Docker">
+            <span>GHCR (Docker)</span>
+        </div>
+        <div class="pipeline-arrow">➔</div>
+        <div class="pipeline-step">
+            <!-- Inline SVG for Argo CD -->
+            <svg viewBox="0 0 100 123" fill="none"><path d="M11.7 94.7L0 74.3V31.5L25.3 0l38 6.2-8 13.8-21.7-3.5L11.7 34.6v37.3l5.8 10.1 27.2-15.7V34.9l-5.8-3.4 8-13.8 19.5 11.3v43.7L42.7 85.8 11.7 94.7z" fill="#F47B2A"/><path d="M88.3 94.7l11.7-20.4V31.5L74.7 0l-38 6.2 8 13.8 21.7-3.5 21.9 22.1v37.3l-5.8 10.1-27.2-15.7V34.9l5.8-3.4-8-13.8-19.5 11.3v43.7l23.7 13.1 31 8.9z" fill="#0096D6"/><path d="M50 49.3l-22.3 39 11.7 20.3h41.2L91.3 89.5 50 49.3zm20.8 45.4H29.2l10.4-18.2 10.4 10.2 10.4-10.2 10.4 18.2z" fill="#ECEFF1"/></svg>
+            <span>Argo CD (GitOps)</span>
+        </div>
+        <div class="pipeline-arrow">➔</div>
+        <div class="pipeline-step">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg" alt="Kubernetes">
+            <span>K3s K8s Cluster</span>
+        </div>
+    </div>
+
+    <!-- 2. Technology Stack -->
+    <h2>2. Implemented Technology Stack</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Layer</th>
+                <th style="width: 30%;">Target Technology</th>
+                <th style="width: 45%;">MVP Realization & Focus</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Source Control</strong></td>
+                <td class="tech-logo-cell">
+                    <svg viewBox="0 0 24 24" fill="#24292e"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                    GitHub
+                </td>
+                <td>Single source of truth for application code and infrastructure manifests.</td>
+            </tr>
+            <tr>
+                <td><strong>Containerization</strong></td>
+                <td class="tech-logo-cell">
+                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" alt="Docker">
+                    Docker
+                </td>
+                <td>Packaging applications into lightweight, immutable, and reproducible images.</td>
+            </tr>
+            <tr>
+                <td><strong>CI & Registry</strong></td>
+                <td class="tech-logo-cell">
+                    <svg viewBox="0 0 24 24" fill="#2088ff"><path d="M11.53 2.22a.75.75 0 011.06 0l1.97 1.97a.75.75 0 010 1.06l-1.97 1.97a.75.75 0 11-1.06-1.06l.69-.69H8.5a3.5 3.5 0 00-3.5 3.5v1.25a.75.75 0 01-1.5 0V10a5 5 0 015-5h3.69l-.69-.69a.75.75 0 010-1.06zM3.65 13.53a.75.75 0 010 1.06l-1.97 1.97a.75.75 0 01-1.06 0l-1.97-1.97a.75.75 0 111.06-1.06l.69.69v-2.25a5 5 0 015-5h3.69l-.69-.69a.75.75 0 111.06-1.06l1.97 1.97a.75.75 0 010 1.06l-1.97 1.97a.75.75 0 11-1.06-1.06l.69-.69H5.42a3.5 3.5 0 00-3.5 3.5v2.25l.69-.69a.75.75 0 011.04 0zm16.7 1.97a.75.75 0 000-1.06l-1.97-1.97a.75.75 0 10-1.06 1.06l.69.69H14.3a5 5 0 00-5 5v1.25a.75.75 0 001.5 0V19.5a3.5 3.5 0 013.5-3.5h3.69l-.69.69a.75.75 0 001.06 1.06l1.97-1.97z"/><circle cx="12" cy="12" r="3" fill="#2088ff"/></svg>
+                    GitHub Actions / GHCR
+                </td>
+                <td>Automated workflows for building and pushing images upon defined Git events.</td>
+            </tr>
+            <tr>
+                <td><strong>GitOps & CD</strong></td>
+                <td class="tech-logo-cell">
+                    <svg viewBox="0 0 100 123" fill="none"><path d="M11.7 94.7L0 74.3V31.5L25.3 0l38 6.2-8 13.8-21.7-3.5L11.7 34.6v37.3l5.8 10.1 27.2-15.7V34.9l-5.8-3.4 8-13.8 19.5 11.3v43.7L42.7 85.8 11.7 94.7z" fill="#F47B2A"/><path d="M88.3 94.7l11.7-20.4V31.5L74.7 0l-38 6.2 8 13.8 21.7-3.5 21.9 22.1v37.3l-5.8 10.1-27.2-15.7V34.9l5.8-3.4-8-13.8-19.5 11.3v43.7l23.7 13.1 31 8.9z" fill="#0096D6"/><path d="M50 49.3l-22.3 39 11.7 20.3h41.2L91.3 89.5 50 49.3zm20.8 45.4H29.2l10.4-18.2 10.4 10.2 10.4-10.2 10.4 18.2z" fill="#ECEFF1"/></svg>
+                    Argo CD
+                </td>
+                <td>Continuous reconciliation loop ensuring Desired State (Git) matches Live State.</td>
+            </tr>
+            <tr>
+                <td><strong>Orchestration</strong></td>
+                <td class="tech-logo-cell">
+                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg" alt="Kubernetes">
+                    K3s Kubernetes
+                </td>
+                <td>Lightweight, resource-efficient local cluster setup for rapid cloud-native prototyping.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- 3. Technical Highlights -->
+    <h2>3. Technical Highlights & Implementation</h2>
+    <ul>
+        <li><strong>Declarative Manifests:</strong> Complete environment configuration defined as code within version control, preventing manual snowflake configurations.</li>
+        <li><strong>App-of-Apps Preparedness:</strong> Architecture structurally modeled to support multi-application scaling and streamlined multi-environment promotion (Dev/QA/Prod).</li>
+        <li><strong>Automated Reconciliation & Self-Healing:</strong> Out-of-sync states caused by manual cluster interventions (e.g., drift via <code>kubectl</code>) are detected and auto-corrected immediately.</li>
+        <li><strong>Automated Validation Suite:</strong> Built-in automated diagnostic logic to verify cluster status, pod life cycles, and GitOps sync status health.</li>
+        <li><strong>Operational Troubleshooting:</strong> Documented structural knowledge base during implementation, handling common real-world failure modes (e.g., deployment pauses, image tag issues).</li>
+    </ul>
+
+    <!-- 4. Strategic Business Value -->
+    <h2>4. Strategic Business Value for Merkur Platform</h2>
+    <ul>
+        <li><strong>Standardization & Reliability:</strong> Establishes a highly reproducible blueprint for cloud-native software delivery to gradually decouple legacy infrastructure.</li>
+        <li><strong>Quality Gates:</strong> The integrated health verification suite serves as a base layout that can easily be baked into automated quality gates before production rollouts.</li>
+        <li><strong>Agile Execution:</strong> Demonstrates rapid execution capabilities, translating abstract cloud-native requirements into a working, structured MVP within days.</li>
+    </ul>
+
+    <!-- Footer -->
+    <div class="footer">
+        Prepared by Dr. Achim Hepberger for the Strategic Technical Interview at Merkur Versicherung AG.
+    </div>
+
+</body>
+</html>
