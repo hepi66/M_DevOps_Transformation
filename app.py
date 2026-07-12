@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 
 st.set_page_config(
     page_title="M-DevOps Transformation",
@@ -131,8 +132,6 @@ Streamlit Application
 # ------------------------------------------------------------------
 # DevOps Workflow Simulator
 # ------------------------------------------------------------------
-
-import time
 
 st.header("DevOps Workflow Simulator")
 
