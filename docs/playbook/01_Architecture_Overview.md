@@ -14,13 +14,13 @@ This document intentionally focuses on architecture and responsibilities rather 
 
 The platform was designed to achieve the following objectives:
 
-- Automated software delivery
-- Reproducible deployments
-- Git-based change management
-- Containerized application execution
-- Automated validation
-- Simplified operational management
-- Continuous synchronization between desired and actual system state
+* Automated software delivery
+* Reproducible deployments
+* Git-based change management
+* Containerized application execution
+* Automated validation
+* Simplified operational management
+* Continuous synchronization between desired and actual system state
 
 The architecture follows modern DevOps and GitOps principles.
 
@@ -28,31 +28,34 @@ The architecture follows modern DevOps and GitOps principles.
 
 # High-Level Architecture
 
-```mermaid
-flowchart TD
-    Developer["Developer Workstation"]
-    Repository["GitHub Repository<br/>Source of Truth"]
-    Actions["GitHub Actions<br/>CI Pipeline"]
-    Docker["Docker<br/>Image Build"]
-    GHCR["GitHub Container Registry<br/>Deployment Artifact"]
-    ArgoCD["ArgoCD<br/>GitOps Controller"]
-    Kubernetes["Kubernetes<br/>Runtime Platform"]
-    Application["Streamlit Application"]
-    Validation["Validation Scripts<br/>Platform Health"]
+The platform consists of the following major layers:
 
-    Developer -->|Commit and Push| Repository
-    Repository -->|Triggers| Actions
-    Actions -->|Builds| Docker
-    Docker -->|Publishes Image| GHCR
-    Repository -->|Desired State| ArgoCD
-    ArgoCD -->|Synchronizes| Kubernetes
-    GHCR -->|Provides Image| Kubernetes
-    Kubernetes -->|Runs| Application
-    Validation -->|Verifies| Kubernetes
-    Validation -->|Verifies| ArgoCD
+```text
+Developer
+    │
+    ▼
+GitHub Repository
+    │
+    ▼
+GitHub Actions
+    │
+    ▼
+Docker Image Build
+    │
+    ▼
+GitHub Container Registry (GHCR)
+    │
+    ▼
+ArgoCD
+    │
+    ▼
+Kubernetes
+    │
+    ▼
+Running Application
 ```
 
-The architecture separates software development, artifact creation, deployment control, runtime execution, and platform validation.
+Each layer has a clearly defined responsibility.
 
 ---
 
@@ -62,20 +65,18 @@ The architecture separates software development, artifact creation, deployment c
 
 Purpose:
 
-- Application development
-- Local testing
-- Source code management
-- Validation before commit
+* Application development
+* Local testing
+* Source code management
+* Validation before commit
 
-Primary tools:
+Primary Tools:
 
-- Windows 11
-- Visual Studio Code
-- PowerShell
-- Python
-- Python virtual environment
-- Docker Desktop
-- Git
+* Visual Studio Code
+* Python
+* PowerShell
+* Docker Desktop
+* Git
 
 ---
 
@@ -83,20 +84,18 @@ Primary tools:
 
 Purpose:
 
-- Act as the single source of truth
-- Store version-controlled engineering artifacts
-- Support collaboration and review
-- Trigger automated workflows
+* Single source of truth
+* Version control
+* Collaboration
+* Storage of platform configuration
 
 The repository stores:
 
-- Application source code
-- Automated tests
-- Docker configuration
-- CI/CD configuration
-- Kubernetes and GitOps configuration
-- Validation scripts
-- Engineering documentation
+* Application source code
+* CI/CD configuration
+* Kubernetes manifests
+* Documentation
+* Validation scripts
 
 ---
 
@@ -104,18 +103,18 @@ The repository stores:
 
 Purpose:
 
-- Perform continuous integration
-- Validate engineering changes
-- Build deployment artifacts
-- Publish container images
+* Continuous Integration
+* Automated quality validation
+* Automated container build
+* Automated container publication
 
-Key responsibilities:
+Key Responsibilities:
 
-- Ruff linting
-- Bandit security scanning
-- pytest execution
-- Docker image build
-- GHCR publication
+* Linting
+* Security scanning
+* Automated testing
+* Docker image build
+* Container registry publication
 
 ---
 
@@ -123,34 +122,32 @@ Key responsibilities:
 
 Purpose:
 
-- Package the application and its dependencies
-- Create a reproducible runtime environment
-- Produce the deployable software artifact
+* Package the application and its dependencies
+* Create a reproducible runtime environment
 
-The Docker image contains:
+Benefits:
 
-- Application source code
-- Python runtime
-- Application dependencies
-- Startup instructions
+* Consistent execution environment
+* Simplified deployment
+* Environment portability
 
-The Docker image is the artifact consumed by Kubernetes.
+The Docker image becomes the deployable software artifact.
 
 ---
 
-## GitHub Container Registry
+## GitHub Container Registry (GHCR)
 
 Purpose:
 
-- Store container images
-- Distribute deployment artifacts
-- Preserve published image versions
+* Central storage for container images
 
-GHCR separates software creation from software execution.
+Responsibilities:
 
-GitHub Actions publishes images to GHCR.
+* Store versioned application images
+* Provide images to Kubernetes deployments
+* Maintain deployment artifacts independent of source code execution
 
-Kubernetes pulls images from GHCR during workload creation.
+GHCR acts as the software distribution layer of the platform.
 
 ---
 
@@ -158,14 +155,16 @@ Kubernetes pulls images from GHCR during workload creation.
 
 Purpose:
 
-- Act as the GitOps deployment controller
-- Monitor the desired state stored in Git
-- Synchronize Kubernetes resources
-- Detect and correct configuration drift
+* GitOps deployment controller
 
-ArgoCD does not build application images.
+Responsibilities:
 
-ArgoCD applies deployment configuration that references images stored in GHCR.
+* Monitor Git repositories
+* Detect configuration changes
+* Synchronize desired and actual state
+* Self-heal configuration drift
+
+ArgoCD continuously ensures that the cluster reflects the state declared in Git.
 
 ---
 
@@ -173,25 +172,17 @@ ArgoCD applies deployment configuration that references images stored in GHCR.
 
 Purpose:
 
-- Execute containerized application workloads
-- Schedule Pods
-- Manage Deployments
-- Provide Services
-- Maintain the declared runtime state
+* Application runtime platform
 
-Kubernetes receives the desired resource definitions through ArgoCD and retrieves the required container images from GHCR.
+Responsibilities:
 
----
+* Container scheduling
+* Application execution
+* Service management
+* Resource orchestration
+* Platform resilience
 
-## Application
-
-Purpose:
-
-- Provide the Streamlit application functionality
-- Run inside a Kubernetes-managed container
-- Expose the application through the configured network service
-
-The application is the final runtime result of the delivery chain.
+Kubernetes executes the workloads defined by the deployment configuration.
 
 ---
 
@@ -199,212 +190,102 @@ The application is the final runtime result of the delivery chain.
 
 Purpose:
 
-- Verify infrastructure readiness
-- Verify GitOps synchronization
-- Verify Pod and container health
-- Confirm operational readiness
+* Verify platform health
 
-Primary scripts:
+Responsibilities:
 
-- `verify_cluster.ps1`
-- `verify_gitops.ps1`
-- `verify_pods.ps1`
-- `verify_all.ps1`
+* Infrastructure validation
+* GitOps validation
+* Workload validation
+* Operational readiness checks
 
-The validation layer provides a repeatable definition of platform health.
-
----
-
-# Architectural Relationships
-
-## Source Code and Deployment Artifact
-
-Application source code is not deployed directly to Kubernetes.
-
-The relationship is:
-
-```text
-Application Source
-        ↓
-Docker Build
-        ↓
-Container Image
-        ↓
-GHCR
-        ↓
-Kubernetes
-```
-
----
-
-## Git and GitOps
-
-Git stores the desired platform state.
-
-ArgoCD observes that desired state and reconciles Kubernetes accordingly.
-
-```text
-Git Desired State
-        ↓
-ArgoCD Reconciliation
-        ↓
-Kubernetes Actual State
-```
-
----
-
-## ArgoCD and Kubernetes
-
-ArgoCD and Kubernetes have different responsibilities.
-
-```text
-ArgoCD
-    Manages desired state
-
-Kubernetes
-    Executes desired state
-```
-
-ArgoCD creates or updates Kubernetes resources.
-
-Kubernetes runs and maintains the resulting workloads.
-
----
-
-## GHCR and Kubernetes
-
-GHCR stores the deployable image.
-
-Kubernetes retrieves and runs that image.
-
-```text
-GHCR
-    Stores image
-
-Kubernetes
-    Pulls and runs image
-```
+Validation scripts provide a consistent definition of platform health.
 
 ---
 
 # Architectural Principles
 
-## Git as the Source of Truth
+## Git as Source of Truth
 
 All platform configuration should originate from version-controlled repositories.
 
-Manual configuration changes should be avoided because they create drift and reduce reproducibility.
+Manual configuration changes should be avoided.
 
 ---
 
 ## Declarative Configuration
 
-The desired platform state is described through configuration files.
+Desired platform state is described declaratively.
 
-Controllers continuously attempt to make the actual state match the declared state.
+The platform continuously attempts to converge toward the declared state.
 
 ---
 
 ## GitOps Deployment Model
 
-Deployment is driven by repository state.
+Deployment is initiated by changes committed to Git.
 
-The normal deployment path does not require manual `kubectl apply` commands for application updates.
+No direct production deployment actions are required.
+
+The deployment process is driven entirely by repository state.
 
 ---
 
 ## Immutable Deployment Artifacts
 
-Application images are built once and then stored in GHCR.
+Application images are built once and deployed repeatedly.
 
-Kubernetes deploys pre-built images instead of rebuilding application software inside the cluster.
-
----
-
-## Separation of Responsibilities
-
-Each platform component has a specific role:
-
-| Component | Responsibility |
-|---|---|
-| GitHub | Source control and desired state |
-| GitHub Actions | Validation and artifact creation |
-| Docker | Application packaging |
-| GHCR | Artifact storage |
-| ArgoCD | GitOps reconciliation |
-| Kubernetes | Runtime execution |
-| Validation Scripts | Health verification |
+Deployments should consume pre-built container images rather than rebuilding software inside the cluster.
 
 ---
 
 ## Continuous Validation
 
-Platform health must be verifiable through repeatable checks.
+Platform health should be continuously verifiable through automated checks.
 
-A deployment is not considered complete until validation succeeds.
+Validation results must be deterministic and repeatable.
 
 ---
 
 # Deployment Flow Overview
 
-The delivery lifecycle follows this sequence:
+The deployment lifecycle follows the sequence below:
 
-1. The developer changes application code.
-2. The change is validated locally.
-3. The change is committed and pushed to GitHub.
-4. GitHub Actions executes quality gates.
-5. GitHub Actions builds a Docker image.
-6. The image is published to GHCR.
-7. ArgoCD evaluates the desired state stored in Git.
-8. ArgoCD synchronizes Kubernetes resources.
-9. Kubernetes pulls the required image from GHCR.
-10. Kubernetes starts or updates the application workload.
-11. Validation scripts verify platform health.
+1. Developer changes application code.
+2. Changes are committed to Git.
+3. GitHub Actions validates the change.
+4. A Docker image is built.
+5. The image is published to GHCR.
+6. ArgoCD detects repository state.
+7. Kubernetes receives updated deployment instructions.
+8. Containers are started or updated.
+9. Validation scripts confirm platform health.
 
 ---
 
 # Known Architecture Gaps
 
-The following areas require verification during the future clean-system rebuild:
+The following areas require further verification or reconstruction:
 
-- Final Kubernetes application deployment manifests
-- Detailed ApplicationSet usage
-- Complete Kubernetes cluster bootstrap sequence
-- Complete ArgoCD installation sequence
-- Exact GitOps manifest hierarchy
+* Kubernetes application deployment manifests
+* Detailed cluster bootstrap procedure
+* Detailed ArgoCD bootstrap procedure
+* Disaster recovery workflow
 
-These gaps are documented explicitly rather than treated as validated knowledge.
+These gaps were identified during PLAYBOOK-01 analysis and will be addressed in subsequent Playbook sections.
 
 ---
 
 # Relationship to Other Playbook Documents
 
-For the complete delivery workflow, see:
+This document explains the architecture at a conceptual level.
 
-- [Golden Path End-to-End](03_Golden_Path_End_to_End.md)
+For implementation details, continue with:
 
-For a file and component map, see:
+* Toolchain Overview
+* Golden Path End-to-End
+* Rebuild Guides
+* Operations Guides
+* Troubleshooting Guides
 
-- [Platform Component Map](04_Platform_Component_Map.md)
-
-For tool responsibilities, see:
-
-- [Toolchain Overview](02_Toolchain_Overview.md)
-
-For design reasoning, see:
-
-- [Architecture Decisions and Rationale](06_Architecture_Decisions_and_Rationale.md)
-
-For implementation procedures, continue with:
-
-- [Workstation Setup Guide](10_Workstation_Setup_Guide.md)
-- [Container Build and Validation Guide](12_Container_Build_and_Validation_Guide.md)
-- [GitOps and ArgoCD Guide](15_GitOps_and_ArgoCD_Guide.md)
-- [Kubernetes Deployment and Runtime Guide](16_Kubernetes_Deployment_and_Runtime_Guide.md)
-
----
-
-Return to:
-
-- [Engineering Playbook](README.md)
-- [Engineering Documentation Portal](../README.md)
+These documents build upon the architectural concepts introduced here.
