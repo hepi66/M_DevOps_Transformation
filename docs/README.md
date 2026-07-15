@@ -45,7 +45,7 @@ Every phase is documented and reproducible.
 # Choose Your Starting Point
 
 | I want to... | Start here |
-|---------------|------------|
+|---|---|
 | 📘 Learn how the platform works | [Engineering Playbook](playbook/README.md) |
 | 🛠 Build or rebuild the platform | [Engineering Playbook](playbook/README.md) |
 | ⚙ Operate the platform | [Engineering Playbook](playbook/README.md) |
@@ -86,9 +86,9 @@ Includes:
 
 Repository folders:
 
-- handbook/
-- standards/
-- cheat_sheets/
+- `handbook/`
+- `standards/`
+- `cheat_sheets/`
 
 ---
 
@@ -104,7 +104,7 @@ Includes:
 
 Repository folder:
 
-- reports/
+- `reports/`
 
 ---
 
@@ -148,7 +148,7 @@ The Engineering Documentation Portal follows five core principles.
 # Platform Status
 
 | Component | Status |
-|-----------|--------|
+|---|---|
 | Engineering Platform | ✅ Complete MVP |
 | Engineering Knowledge Base | ✅ Available |
 | Engineering Playbook | ✅ Available |
@@ -160,25 +160,21 @@ The Engineering Documentation Portal follows five core principles.
 
 # Repository Structure
 
-```text
-docs/
-│
-├── README.md
-│
-├── assets/
-│
-├── playbook/
-│
-├── handbook/
-│
-├── reports/
-│
-├── standards/
-│
-├── cheat_sheets/
-│
-└── prompts/
-```
+    docs/
+    │
+    ├── README.md
+    ├── _config.yml
+    ├── assets/
+    ├── playbook/
+    ├── handbook/
+    ├── reports/
+    ├── standards/
+    ├── cheat_sheets/
+    └── prompts/
+
+---
+
+**Portal Version:** 1.0
 
 ---
 
