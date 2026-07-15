@@ -1,154 +1,187 @@
-Title: Engineering Knowledge Base
-Type: Handbook Index
-Status: Living Document
-Version: 2.0
-Owner: Engineering
-Last Updated: 2026-07-03
+# M-DevOps Transformation
 
-# Engineering Knowledge Base
+# Engineering Documentation Portal
 
-Welcome to the Engineering Knowledge Base (EKB) of the **M_DevOps_Transformation** project.
-
-The EKB is the single entry point for all engineering documentation, standards, reports, templates, prompts, cheat sheets, and reusable knowledge created throughout the project lifecycle.
-
-The objective of the EKB is to ensure that engineering knowledge is captured once, maintained consistently, and remains reusable throughout the project's evolution.
+> **From Local Development to GitOps Deployment**
 
 ---
 
-# Getting Started
-
-If you are new to this project, read the documents in the following order:
-
-1. `handbook/00_Working_Principles.md`
-2. `handbook/01_Documentation_Architecture.md`
-3. This README
-4. The latest Epic Transition Report
+![M-DevOps Platform Overview](assets/m-devops-platform-overview-v1.png)
 
 ---
 
-# Repository Structure
+## Welcome
 
-```
-docs/
-│
-├── archive/
-├── cheat_sheets/
-├── decisions/
-├── handbook/
-├── prompts/
-├── reports/
-├── standards/
-└── templates/
+Welcome to the official **Engineering Documentation Portal** of the **M-DevOps Transformation** project.
+
+This portal is the central entry point for all engineering documentation.
+
+Whether you want to understand the architecture, rebuild the platform, operate the system or troubleshoot a deployment, this portal will guide you to the appropriate documentation.
+
+---
+
+# Engineering Lifecycle
+
+The platform follows a complete engineering lifecycle.
+
+```text
+📘 Learn
+      ↓
+🛠 Build
+      ↓
+✅ Validate
+      ↓
+🚀 Deploy
+      ↓
+⚙ Operate
+      ↓
+🚨 Recover
 ```
 
-Each directory serves a specific purpose within the Engineering Knowledge Base.
+Every phase is documented and reproducible.
 
 ---
 
-# Handbook
+# Choose Your Starting Point
 
-Engineering concepts, documentation architecture and long-term project knowledge.
-
-| Document | Description |
-|----------|-------------|
-| handbook/00_Working_Principles.md | Engineering principles and collaboration rules |
-| handbook/01_Documentation_Architecture.md | Documentation architecture and knowledge management |
-
----
-
-# Standards
-
-Project-specific engineering standards.
-
-| Document | Description |
-|----------|-------------|
-| ToolChain.md | DevOps toolchain overview |
-| Container_Registry_Strategy.md | Container registry strategy |
-
-> Additional engineering standards will be introduced as the project evolves.
+| I want to... | Start here |
+|---------------|------------|
+| 📘 Learn how the platform works | [Engineering Playbook](playbook/README.md) |
+| 🛠 Build or rebuild the platform | [Engineering Playbook](playbook/README.md) |
+| ⚙ Operate the platform | [Engineering Playbook](playbook/README.md) |
+| 🚨 Troubleshoot a problem | [Engineering Playbook](playbook/README.md) |
+| ❓ Find documentation by question | [Documentation Navigator](playbook/Playbook_Navigation_Guide.md) |
 
 ---
 
-# Cheat Sheets
+# Engineering Resources
 
-Daily engineering reference documentation.
+## 📖 Engineering Playbook
 
-| Document | Description |
-|----------|-------------|
-| cheat_sheets/Git_Daily_Workflow.md | Daily Git and GitHub workflow |
+The operational documentation of the platform.
 
----
+Contains:
 
-# Reports
+- Architecture
+- Golden Path
+- Rebuild Guides
+- Operations
+- Troubleshooting
+- Recovery
 
-Permanent Epic summaries and engineering reports.
-
-| Document | Description |
-|----------|-------------|
-| reports/E00_Transition_Report.md | Project foundation |
-| reports/E01_Transition_Report.md | Local development environment |
-| reports/E02_Transition_Report.md | CI/CD pipeline implementation |
-| E01_Verification_Report.md | Local Docker verification report |
+➡ **[Open Engineering Playbook](playbook/README.md)**
 
 ---
 
-# Templates
+## 📚 Engineering Knowledge Base
 
-Reusable documentation templates.
+Engineering knowledge collected during the implementation.
 
-| Document | Description |
-|----------|-------------|
-| templates/Epic_Transition_Report_Template.md | Standard Epic handover template |
+Includes:
 
----
+- Handbook
+- Standards
+- Cheat Sheets
+- Engineering Decisions
 
-# Prompts
+Repository folders:
 
-Reusable AI prompts supporting the engineering workflow.
-
-| Document | Description |
-|----------|-------------|
-| prompts/Generate_Epic_Transition_Report.md | Generate an official Epic Transition Report |
-
----
-
-# Architecture Decisions
-
-Architectural decisions are maintained within the `decisions/` directory.
-
-This section will grow as long-term architectural decisions are made.
+- handbook/
+- standards/
+- cheat_sheets/
 
 ---
 
-# Archive
+## 📈 Engineering Reports
 
-Historical documents that have been superseded but are retained for traceability are stored in the `archive/` directory.
+Historical project documentation.
 
-Archived documents are not considered authoritative references.
+Includes:
+
+- Epic Reports
+- Transition Reports
+- Retrospectives
+
+Repository folder:
+
+- reports/
+
+---
+
+# Documentation Philosophy
+
+The documentation is organized around engineering workflows instead of repository folders.
+
+The goal is to answer engineering questions quickly, for example:
+
+- How do I rebuild the platform?
+- How does GitOps work?
+- How does a Docker image reach Kubernetes?
+- Why is my Pod not starting?
+- How do I validate the platform?
+- Where should I begin?
+
+---
+
+# Documentation Navigator
+
+Looking for something specific?
+
+The Documentation Navigator provides a question-based entry point into the complete Playbook.
+
+➡ **[Open Documentation Navigator](playbook/Playbook_Navigation_Guide.md)**
 
 ---
 
 # Engineering Principles
 
-The Engineering Knowledge Base follows the principles defined in:
+The Engineering Documentation Portal follows five core principles.
 
-- `handbook/00_Working_Principles.md`
-- `handbook/01_Documentation_Architecture.md`
-
-The repository follows the guiding principle:
-
-> **One Decision – One Standard – One Cheat Sheet**
-
-Engineering knowledge shall have exactly one authoritative home.
+- Understandable
+- Repeatable
+- Recoverable
+- Maintainable
+- Operational
 
 ---
 
-# Status
+# Platform Status
 
-**Version:** 2.0
+| Component | Status |
+|-----------|--------|
+| Engineering Platform | ✅ Complete MVP |
+| Engineering Knowledge Base | ✅ Available |
+| Engineering Playbook | ✅ Available |
+| Engineering Documentation Portal | 🚧 In Progress |
+| Dashboard | 🚧 In Progress |
+| Notebook Rebuild Validation | ⏳ Planned |
 
-**Status:** Living Document
+---
 
-The Engineering Knowledge Base evolves together with the project.
+# Repository Structure
 
-New engineering knowledge is continuously integrated through the established documentation workflow rather than creating isolated documents.
+```text
+docs/
+│
+├── README.md
+│
+├── assets/
+│
+├── playbook/
+│
+├── handbook/
+│
+├── reports/
+│
+├── standards/
+│
+├── cheat_sheets/
+│
+└── prompts/
+```
+
+---
+
+© 2026 M-DevOps Transformation
+
+**Engineering Documentation Portal**
