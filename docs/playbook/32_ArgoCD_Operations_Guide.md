@@ -474,13 +474,25 @@ This guide is complete when the engineer understands:
 * Daily GitOps operations
 
 The engineer should be capable of monitoring and maintaining the GitOps layer confidently.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Kubernetes Operations Guide**
+- [Kubernetes Operations Guide](33_Kubernetes_Operations_Guide.md)
 
-This guide explains how to investigate workloads, Pods, Deployments, and Services during normal platform operations.
+---
+
+# Related Documents
+
+- [GitOps and ArgoCD Guide](15_GitOps_and_ArgoCD_Guide.md)
+- [Validation and Health Checks](31_Validation_and_Health_Checks.md)
+- [ArgoCD Troubleshooting](43_ArgoCD_Troubleshooting.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

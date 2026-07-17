@@ -14,14 +14,14 @@ The Playbook serves as the primary operational knowledge source for the project.
 
 This Playbook provides:
 
-* Platform architecture documentation
-* Toolchain documentation
-* End-to-end delivery workflow documentation
-* Platform rebuild procedures
-* Validation procedures
-* Operational guidance
-* Troubleshooting knowledge
-* Lessons learned from implementation
+- Platform architecture documentation
+- Toolchain documentation
+- End-to-end delivery workflow documentation
+- Platform rebuild procedures
+- Validation procedures
+- Operational guidance
+- Troubleshooting knowledge
+- Lessons learned from implementation
 
 The Playbook is designed to support long-term maintainability and engineering knowledge transfer.
 
@@ -31,12 +31,12 @@ The Playbook is designed to support long-term maintainability and engineering kn
 
 This Playbook is intended for:
 
-* DevOps Engineers
-* Platform Engineers
-* Software Engineers
-* Technical Leads
-* Engineering Managers
-* Future maintainers of the platform
+- DevOps Engineers
+- Platform Engineers
+- Software Engineers
+- Technical Leads
+- Engineering Managers
+- Future maintainers of the platform
 
 The reader is expected to have basic familiarity with Git, Docker, Kubernetes, and software development practices.
 
@@ -48,21 +48,37 @@ The Playbook covers the complete validated platform delivery chain:
 
 Developer Workstation
 
-→ Source Control
+↓
 
-→ Continuous Integration
+Source Control
 
-→ Container Build
+↓
 
-→ Container Registry
+Continuous Integration
 
-→ GitOps
+↓
 
-→ Kubernetes
+Container Build
 
-→ Validation
+↓
 
-→ Operations
+Container Registry
+
+↓
+
+GitOps
+
+↓
+
+Kubernetes
+
+↓
+
+Validation
+
+↓
+
+Operations
 
 The Playbook focuses on the final validated implementation.
 
@@ -74,12 +90,12 @@ Rejected implementation attempts, temporary experiments, and obsolete approaches
 
 The platform follows the following engineering principles:
 
-* Git as the single source of truth
-* Infrastructure and deployment managed declaratively
-* Automated validation wherever possible
-* Small and verifiable changes
-* Reproducible engineering workflows
-* Continuous improvement through documented lessons learned
+- Git as the single source of truth
+- Infrastructure and deployment managed declaratively
+- Automated validation wherever possible
+- Small and verifiable changes
+- Reproducible engineering workflows
+- Continuous improvement through documented lessons learned
 
 ---
 
@@ -87,15 +103,15 @@ The platform follows the following engineering principles:
 
 The platform consists of the following major components:
 
-| Component          | Purpose                               |
-| ------------------ | ------------------------------------- |
-| GitHub             | Source control and collaboration      |
-| GitHub Actions     | Continuous integration and automation |
-| Docker             | Application packaging                 |
-| GHCR               | Container image storage               |
-| ArgoCD             | GitOps deployment controller          |
-| Kubernetes         | Application runtime platform          |
-| Validation Scripts | Platform health verification          |
+| Component | Purpose |
+|------------|---------|
+| GitHub | Source control and collaboration |
+| GitHub Actions | Continuous integration and automation |
+| Docker | Application packaging |
+| GHCR | Container image storage |
+| ArgoCD | GitOps deployment controller |
+| Kubernetes | Application runtime platform |
+| Validation Scripts | Platform health verification |
 
 Together these components form a complete DevOps delivery pipeline from source code change to running application.
 
@@ -103,27 +119,56 @@ Together these components form a complete DevOps delivery pipeline from source c
 
 # Playbook Structure
 
-The Playbook is organized into the following sections:
+The Playbook is organized into the following sections.
 
 ## Foundation
 
-Platform concepts, architecture, and toolchain overview.
+Platform concepts, architecture, and engineering decisions.
+
+Start with:
+
+- [01_Architecture_Overview.md](01_Architecture_Overview.md)
+- [02_Toolchain_Overview.md](02_Toolchain_Overview.md)
+
+---
 
 ## Golden Path
 
 The validated end-to-end delivery workflow.
 
-## Rebuild Guides
+Continue with:
 
-Procedures for rebuilding the platform from scratch.
+- [03_Golden_Path_End_to_End.md](03_Golden_Path_End_to_End.md)
+
+---
+
+## Platform Build
+
+Procedures for rebuilding the complete platform.
+
+Continue with:
+
+- [10_Workstation_Setup_Guide.md](10_Workstation_Setup_Guide.md)
+
+---
 
 ## Operations
 
-Operational procedures, validation, and platform management.
+Daily platform operation, validation and maintenance.
+
+Continue with:
+
+- [30_Daily_Operations_Guide.md](30_Daily_Operations_Guide.md)
+
+---
 
 ## Troubleshooting
 
-Known issues, diagnostics, and recovery procedures.
+Diagnostics, recovery procedures and engineering lessons learned.
+
+Continue with:
+
+- [40_Troubleshooting_Overview.md](40_Troubleshooting_Overview.md)
 
 ---
 
@@ -141,11 +186,25 @@ A platform engineer should be able to use this Playbook to:
 8. Recover the platform if required.
 
 If these objectives can be achieved without relying on undocumented knowledge, the Playbook is considered successful.
+---
+
+# Next Recommended Reading
+
+Continue with:
+
+- [Architecture Overview](01_Architecture_Overview.md)
 
 ---
 
-# Document Status
+# Related Documents
 
-Status: Active
+- [Quick Start Guide](Quick_Start_Guide.md)
+- [Document Roadmap](Document_Roadmap.md)
+- [Playbook Navigation Guide](Playbook_Navigation_Guide.md)
 
-This document serves as the entry point for the M-DevOps Platform Playbook and should be read before consulting any other Playbook section.
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

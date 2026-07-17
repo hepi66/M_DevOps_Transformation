@@ -649,3 +649,25 @@ Any findings should be incorporated into future Playbook revisions.
 # Completion Statement
 
 When all checklist items are completed successfully, the M-DevOps platform has been rebuilt from a known-good baseline and is considered operational.
+---
+
+# Next Recommended Reading
+
+Continue with:
+
+- [Daily Operations Guide](30_Daily_Operations_Guide.md)
+
+---
+
+# Related Documents
+
+- [Kubernetes Bootstrap Guide](18_Kubernetes_Bootstrap_Guide.md)
+- [ArgoCD Bootstrap Guide](19_ArgoCD_Bootstrap_Guide.md)
+- [Platform Validation Guide](17_Platform_Validation_Guide.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

@@ -108,6 +108,14 @@ Repository folder:
 
 ---
 
+## 📋 Engineering Cheat Sheets
+
+Quick reference documents for daily development and operations.
+
+➡️ [Open Cheat Sheets](cheat_sheets/README.md)
+
+---
+
 # Documentation Philosophy
 
 The documentation is organized around engineering workflows instead of repository folders.
@@ -181,3 +189,11 @@ The Engineering Documentation Portal follows five core principles.
 © 2026 M-DevOps Transformation
 
 **Engineering Documentation Portal**
+
+---
+
+## Engineering Documentation Tips
+
+- Use **Ctrl + Click** (or the middle mouse button) to open documents in a new browser tab.
+- Follow the recommended reading path whenever possible.
+- If you are unsure where to begin, open the **Quick Start Guide**.

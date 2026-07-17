@@ -401,13 +401,25 @@ This guide is complete when the engineer understands:
 * Common failure patterns
 
 The engineer should be capable of verifying platform health consistently and repeatably.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Operations and Platform Management Guides**
+- [Kubernetes Bootstrap Guide](18_Kubernetes_Bootstrap_Guide.md)
 
-These guides explain how to operate and maintain the platform over time.
+---
+
+# Related Documents
+
+- [Kubernetes Deployment and Runtime Guide](16_Kubernetes_Deployment_and_Runtime_Guide.md)
+- [Validation and Health Checks](31_Validation_and_Health_Checks.md)
+- [Platform Rebuild Checklist](20_Platform_Rebuild_Checklist.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

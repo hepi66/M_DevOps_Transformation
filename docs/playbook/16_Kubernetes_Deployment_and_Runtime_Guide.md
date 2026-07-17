@@ -379,13 +379,25 @@ This guide is complete when the engineer understands:
 * Basic troubleshooting workflow
 
 The engineer should be able to explain how Kubernetes transforms deployment definitions into running application workloads.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Platform Validation Guide**
+- [Platform Validation Guide](17_Platform_Validation_Guide.md)
 
-This guide explains how platform health is verified using the project's validation framework.
+---
+
+# Related Documents
+
+- [GitOps and ArgoCD Guide](15_GitOps_and_ArgoCD_Guide.md)
+- [Platform Validation Guide](17_Platform_Validation_Guide.md)
+- [Kubernetes Troubleshooting](44_Kubernetes_Troubleshooting.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

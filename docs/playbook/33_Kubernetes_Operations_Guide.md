@@ -588,13 +588,25 @@ This guide is complete when the engineer understands:
 * Validation process
 
 The engineer should be capable of performing routine Kubernetes operations and first-level troubleshooting confidently.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Release Management Guide**
+- [Release Management Guide](34_Release_Management_Guide.md)
 
-This guide explains how source code changes move through the platform from development to deployment.
+---
+
+# Related Documents
+
+- [Kubernetes Deployment and Runtime Guide](16_Kubernetes_Deployment_and_Runtime_Guide.md)
+- [Validation and Health Checks](31_Validation_and_Health_Checks.md)
+- [Kubernetes Troubleshooting](44_Kubernetes_Troubleshooting.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

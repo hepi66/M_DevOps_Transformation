@@ -401,13 +401,25 @@ This guide is complete when:
 * Validation scripts succeed
 
 The platform is now operating under GitOps control.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Platform Rebuild Checklist**
+- [Platform Rebuild Checklist](20_Platform_Rebuild_Checklist.md)
 
-This checklist provides a complete end-to-end procedure for rebuilding the entire platform from scratch.
+---
+
+# Related Documents
+
+- [Kubernetes Bootstrap Guide](18_Kubernetes_Bootstrap_Guide.md)
+- [GitOps and ArgoCD Guide](15_GitOps_and_ArgoCD_Guide.md)
+- [Platform Rebuild Checklist](20_Platform_Rebuild_Checklist.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

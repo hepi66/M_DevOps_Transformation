@@ -715,13 +715,25 @@ This guide is complete when the engineer understands:
 * Project-specific lessons learned
 
 The engineer should be capable of diagnosing and resolving routine Kubernetes runtime issues independently.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Lessons Learned Knowledge Base**
+- [Lessons Learned Knowledge Base](45_Lessons_Learned_Knowledge_Base.md)
 
-This guide captures the most important engineering, architectural, operational, and project-management lessons learned throughout Epics E00-E04 and the Playbook creation effort.
+---
+
+# Related Documents
+
+- [Kubernetes Deployment and Runtime Guide](16_Kubernetes_Deployment_and_Runtime_Guide.md)
+- [Kubernetes Operations Guide](33_Kubernetes_Operations_Guide.md)
+- [Troubleshooting Overview](40_Troubleshooting_Overview.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

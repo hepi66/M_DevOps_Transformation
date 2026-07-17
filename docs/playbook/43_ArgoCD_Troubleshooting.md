@@ -637,13 +637,25 @@ This guide is complete when the engineer understands:
 * Project-specific lessons learned
 
 The engineer should be capable of diagnosing and resolving routine GitOps and ArgoCD issues independently.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Kubernetes Troubleshooting Guide**
+- [Kubernetes Troubleshooting](44_Kubernetes_Troubleshooting.md)
 
-This guide covers Pods, Deployments, Services, runtime failures, and workload recovery procedures.
+---
+
+# Related Documents
+
+- [GitOps and ArgoCD Guide](15_GitOps_and_ArgoCD_Guide.md)
+- [ArgoCD Operations Guide](32_ArgoCD_Operations_Guide.md)
+- [Troubleshooting Overview](40_Troubleshooting_Overview.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

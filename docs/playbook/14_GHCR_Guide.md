@@ -341,13 +341,25 @@ This guide is complete when the engineer understands:
 * The relationship between Docker and GHCR
 
 The engineer should be able to explain the complete artifact lifecycle from source code to deployable image.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**GitOps and ArgoCD Guide**
+- [GitOps and ArgoCD Guide](15_GitOps_and_ArgoCD_Guide.md)
 
-This introduces the deployment layer that transforms stored artifacts into running workloads.
+---
+
+# Related Documents
+
+- [CI/CD and GitHub Actions Guide](13_CICD_and_GitHub_Actions_Guide.md)
+- [GitOps and ArgoCD Guide](15_GitOps_and_ArgoCD_Guide.md)
+- [CI/CD and GHCR Troubleshooting](42_CICD_and_GHCR_Troubleshooting.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

@@ -327,13 +327,25 @@ This guide is complete when the engineer understands:
 * Routine monitoring activities
 
 The engineer should be capable of performing a standard platform health review confidently and consistently.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Validation and Health Checks Guide**
+- [Validation and Health Checks](31_Validation_and_Health_Checks.md)
 
-This guide explains how platform health is measured, interpreted, and monitored over time.
+---
+
+# Related Documents
+
+- [Validation and Health Checks](31_Validation_and_Health_Checks.md)
+- [ArgoCD Operations Guide](32_ArgoCD_Operations_Guide.md)
+- [Kubernetes Operations Guide](33_Kubernetes_Operations_Guide.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

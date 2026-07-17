@@ -778,13 +778,25 @@ This document is complete when future engineers understand:
 * Which principles guided implementation
 
 Understanding the rationale behind a system is often more valuable than understanding the implementation details alone.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Playbook Navigation Layer**
+- [Workstation Setup Guide](10_Workstation_Setup_Guide.md)
 
-This section will make the complete Playbook easy to navigate and use during development, operations, troubleshooting, and platform rebuild activities.
+---
+
+# Related Documents
+
+- [Architecture Overview](01_Architecture_Overview.md)
+- [Golden Path End-to-End](03_Golden_Path_End_to_End.md)
+- [Glossary](05_Glossary.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

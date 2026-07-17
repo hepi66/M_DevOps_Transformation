@@ -690,13 +690,25 @@ Most infrastructure definitions in the platform are YAML-based.
 This glossary is complete when an engineer can understand the terminology used throughout the Playbook without requiring external references.
 
 The glossary should serve as the primary vocabulary reference for all future platform documentation.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Architecture Decisions and Rationale**
+- [Architecture Decisions and Rationale](06_Architecture_Decisions_and_Rationale.md)
 
-This document explains why the platform was designed the way it was and preserves the engineering reasoning behind major architectural decisions.
+---
+
+# Related Documents
+
+- [Toolchain Overview](02_Toolchain_Overview.md)
+- [Platform Component Map](04_Platform_Component_Map.md)
+- [Architecture Decisions and Rationale](06_Architecture_Decisions_and_Rationale.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

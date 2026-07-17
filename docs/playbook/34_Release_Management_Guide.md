@@ -576,13 +576,25 @@ This guide is complete when the engineer understands:
 * Release success criteria
 
 The engineer should be capable of explaining and operating the complete delivery chain from source code change to running application.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Platform Recovery Guide**
+- [Platform Recovery Guide](35_Platform_Recovery_Guide.md)
 
-This guide explains how to restore platform functionality after failures, outages, or recovery exercises.
+---
+
+# Related Documents
+
+- [CI/CD and GitHub Actions Guide](13_CICD_and_GitHub_Actions_Guide.md)
+- [GHCR Guide](14_GHCR_Guide.md)
+- [GitOps and ArgoCD Guide](15_GitOps_and_ArgoCD_Guide.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)
