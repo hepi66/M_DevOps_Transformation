@@ -75,14 +75,14 @@ git checkout main; git pull --ff-only origin main; git branch -d feature/<featur
 
 Update the local `main` branch before starting new work.
 
-```bash
+```powershell
 git checkout main
 git pull --ff-only origin main
 ```
 
 Create and switch to a new feature branch.
 
-```bash
+```powershell
 git checkout -b feature/<feature-name>
 ```
 
@@ -90,19 +90,19 @@ Work on the implementation.
 
 Check the repository status.
 
-```bash
+```powershell
 git status
 ```
 
 Stage all changes.
 
-```bash
+```powershell
 git add .
 ```
 
 Create a meaningful commit.
 
-```bash
+```powershell
 git commit -m "Short, meaningful commit message"
 ```
 
@@ -112,13 +112,13 @@ git commit -m "Short, meaningful commit message"
 
 Push the feature branch to GitHub.
 
-```bash
+```powershell
 git push -u origin feature/<feature-name>
 ```
 
 For subsequent pushes on the same branch:
 
-```bash
+```powershell
 git push
 ```
 
@@ -164,7 +164,7 @@ If the Pull Request has not yet been merged, continue working on the same featur
 
 Verify the active branch.
 
-```bash
+```powershell
 git branch --show-current
 ```
 
@@ -172,7 +172,7 @@ Make the additional changes.
 
 Then:
 
-```bash
+```powershell
 git status
 git add .
 git commit -m "Add remaining feature updates"
@@ -219,25 +219,25 @@ Update the implementation on the same feature branch.
 
 Check the repository status.
 
-```bash
+```powershell
 git status
 ```
 
 Stage the changes.
 
-```bash
+```powershell
 git add .
 ```
 
 Create a new commit.
 
-```bash
+```powershell
 git commit -m "Fix CI validation issue"
 ```
 
 Push the update.
 
-```bash
+```powershell
 git push
 ```
 
@@ -253,20 +253,20 @@ Merge the Pull Request only after all checks have passed.
 
 Synchronize the local repository after the Pull Request has been merged.
 
-```bash
+```powershell
 git checkout main
 git pull --ff-only origin main
 ```
 
 Delete the local feature branch.
 
-```bash
+```powershell
 git branch -d feature/<feature-name>
 ```
 
 If the remote branch was not deleted through GitHub:
 
-```bash
+```powershell
 git push origin --delete feature/<feature-name>
 ```
 
@@ -284,14 +284,14 @@ If more work is required after the merge, treat it as a new change.
 
 First synchronize `main`.
 
-```bash
+```powershell
 git checkout main
 git pull --ff-only origin main
 ```
 
 Create a new feature branch.
 
-```bash
+```powershell
 git checkout -b feature/<next-feature-name>
 ```
 
@@ -299,7 +299,7 @@ Make the changes.
 
 Then:
 
-```bash
+```powershell
 git add .
 git commit -m "Add follow-up changes"
 git push -u origin feature/<next-feature-name>
@@ -330,7 +330,7 @@ The merge commit remains part of the Git history.
 
 ## Step 1: Update Local Main
 
-```bash
+```powershell
 git checkout main
 git pull --ff-only origin main
 ```
@@ -339,7 +339,7 @@ git pull --ff-only origin main
 
 Display recent commits.
 
-```bash
+```powershell
 git log --oneline -10
 ```
 
@@ -363,19 +363,19 @@ c936a89
 
 Preferred project workflow:
 
-```bash
+```powershell
 git checkout -b revert/pr-70
 ```
 
 ## Step 4: Revert the Merge Commit
 
-```bash
+```powershell
 git revert -m 1 <merge-commit-id>
 ```
 
 Example:
 
-```bash
+```powershell
 git revert -m 1 c936a89
 ```
 
@@ -388,7 +388,7 @@ If Git opens an editor, accept or adjust the generated revert commit message, th
 
 ## Step 5: Push the Revert Branch
 
-```bash
+```powershell
 git push -u origin revert/pr-70
 ```
 
@@ -407,7 +407,7 @@ Merge the revert Pull Request only after the result has been verified.
 
 ## Step 7: Synchronize and Clean Up
 
-```bash
+```powershell
 git checkout main
 git pull --ff-only origin main
 git branch -d revert/pr-70
@@ -415,7 +415,7 @@ git branch -d revert/pr-70
 
 If necessary, delete the remote revert branch:
 
-```bash
+```powershell
 git push origin --delete revert/pr-70
 ```
 
@@ -423,7 +423,7 @@ git push origin --delete revert/pr-70
 
 Confirm that the revert commit is now part of `main`.
 
-```bash
+```powershell
 git log --oneline -10
 git status
 ```
@@ -446,13 +446,13 @@ Use `git revert` because it preserves the shared Git history.
 
 Fetch the latest remote state.
 
-```bash
+```powershell
 git fetch origin
 ```
 
 Compare the remote feature branch with remote `main`.
 
-```bash
+```powershell
 git log origin/main..origin/feature/<feature-name> --oneline
 ```
 
@@ -463,7 +463,7 @@ Interpretation:
 
 Review file differences:
 
-```bash
+```powershell
 git diff --stat origin/main..origin/feature/<feature-name>
 ```
 
