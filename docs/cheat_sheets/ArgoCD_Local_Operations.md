@@ -1,5 +1,5 @@
 ---
-title: Git Daily Workflow
+title: ArgoCD Local Operations
 type: Cheat Sheet
 status: Living Document
 version: 2.2
@@ -7,11 +7,11 @@ owner: Engineering
 last_updated: 2026-07-15
 ---
 
-# Git Daily Workflow
+# ArgoCD Local Operations
 
 > **Purpose**
 >
-> This cheat sheet provides the standard day-to-day Git and GitHub workflow used throughout the project. It serves as a quick reference for common development activities and complements the Engineering Playbook.
+> This cheat sheet provides the standard day-to-day ArgoCD operations used throughout the project. It serves as a quick reference for local deployment, synchronization, troubleshooting, and operational tasks, complementing the Engineering Playbook.
 
 ---
 
