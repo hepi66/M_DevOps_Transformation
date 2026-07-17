@@ -32,13 +32,13 @@ last_updated: 2026-07-15
 
 ## Step 1: Update Main and Create Feature Branch
 
-```bash
+```powershell
 git checkout main; git pull --ff-only origin main; git checkout -b feature/<feature-name>
 ```
 
 ## Step 2: Commit and Push
 
-```bash
+```powershell
 git add .; git commit -m "Short, meaningful commit message"; git push -u origin feature/<feature-name>
 ```
 
@@ -60,7 +60,7 @@ Then:
 
 ## Step 4: Synchronize and Clean Up Locally
 
-```bash
+```powershell
 git checkout main; git pull --ff-only origin main; git branch -d feature/<feature-name>
 ```
 
