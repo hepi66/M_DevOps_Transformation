@@ -396,13 +396,25 @@ This guide is complete when the engineer understands:
 * Knowledge preservation
 
 The engineer should be capable of approaching platform incidents systematically and consistently.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Git and GitHub Troubleshooting Guide**
+- [Git and GitHub Troubleshooting](41_Git_and_GitHub_Troubleshooting.md)
 
-This guide covers source control, repository, and GitHub-related issues encountered during platform development and operation.
+---
+
+# Related Documents
+
+- [Validation and Health Checks](31_Validation_and_Health_Checks.md)
+- [Platform Recovery Guide](35_Platform_Recovery_Guide.md)
+- [Lessons Learned Knowledge Base](45_Lessons_Learned_Knowledge_Base.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

@@ -494,13 +494,25 @@ This guide is complete when the engineer understands:
 * Recommended monitoring workflow
 
 The engineer should be capable of evaluating overall platform health consistently and systematically.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**ArgoCD Operations Guide**
+- [ArgoCD Operations Guide](32_ArgoCD_Operations_Guide.md)
 
-This guide explains how to operate, monitor, and troubleshoot the GitOps layer during daily platform operations.
+---
+
+# Related Documents
+
+- [Platform Validation Guide](17_Platform_Validation_Guide.md)
+- [Daily Operations Guide](30_Daily_Operations_Guide.md)
+- [Platform Recovery Guide](35_Platform_Recovery_Guide.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

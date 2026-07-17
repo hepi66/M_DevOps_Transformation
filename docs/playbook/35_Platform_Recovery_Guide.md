@@ -543,13 +543,25 @@ This guide is complete when the engineer understands:
 * Platform rebuild fallback procedures
 
 The engineer should be capable of restoring platform functionality systematically and safely.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Troubleshooting Knowledge Base**
+- [Troubleshooting Overview](40_Troubleshooting_Overview.md)
 
-This section contains symptom-driven troubleshooting procedures, lessons learned, and operational knowledge collected throughout the project lifecycle.
+---
+
+# Related Documents
+
+- [Platform Rebuild Checklist](20_Platform_Rebuild_Checklist.md)
+- [Validation and Health Checks](31_Validation_and_Health_Checks.md)
+- [Troubleshooting Overview](40_Troubleshooting_Overview.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

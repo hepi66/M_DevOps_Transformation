@@ -338,13 +338,25 @@ This guide is complete when:
 * Cluster validation succeeds
 
 The platform is now ready for ArgoCD installation and GitOps bootstrap.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**ArgoCD Bootstrap Guide**
+- [ArgoCD Bootstrap Guide](19_ArgoCD_Bootstrap_Guide.md)
 
-This guide installs the GitOps layer and establishes the connection between Git and Kubernetes.
+---
+
+# Related Documents
+
+- [Workstation Setup Guide](10_Workstation_Setup_Guide.md)
+- [ArgoCD Bootstrap Guide](19_ArgoCD_Bootstrap_Guide.md)
+- [Platform Rebuild Checklist](20_Platform_Rebuild_Checklist.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

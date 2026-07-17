@@ -612,13 +612,25 @@ This guide is complete when the engineer understands:
 * Project-specific lessons learned
 
 The engineer should be capable of resolving routine Git and GitHub issues independently.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**CI/CD and GHCR Troubleshooting Guide**
+- [CI/CD and GHCR Troubleshooting](42_CICD_and_GHCR_Troubleshooting.md)
 
-This guide covers pipeline failures, container build issues, image publication problems, and artifact-related incidents.
+---
+
+# Related Documents
+
+- [Repository and Development Guide](11_Repository_and_Development_Guide.md)
+- [CI/CD and GitHub Actions Guide](13_CICD_and_GitHub_Actions_Guide.md)
+- [Troubleshooting Overview](40_Troubleshooting_Overview.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

@@ -286,13 +286,25 @@ Before continuing to additional rebuild guides, verify:
 * Application starts locally
 
 All items should be successful before continuing.
+---
+
+# Next Recommended Reading
+
+Continue with:
+
+- [Repository and Development Guide](11_Repository_and_Development_Guide.md)
 
 ---
 
-# Next Step
+# Related Documents
 
-After completing this guide, continue with:
+- [Toolchain Overview](02_Toolchain_Overview.md)
+- [Repository and Development Guide](11_Repository_and_Development_Guide.md)
+- [Platform Rebuild Checklist](20_Platform_Rebuild_Checklist.md)
 
-**Repository & Development Environment Guide**
+---
 
-This confirms that the workstation is capable of supporting all subsequent platform rebuild activities.
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

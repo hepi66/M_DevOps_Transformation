@@ -642,3 +642,28 @@ The goal is engineering maturity.
 # End Of Troubleshooting Knowledge Base
 
 This document concludes the PLAYBOOK-05 knowledge preservation and lessons learned section.
+---
+
+# Next Recommended Reading
+
+This document completes the guided Playbook sequence.
+
+Continue with the task-oriented navigation or begin the clean-system rebuild validation:
+
+- [Documentation Navigator](Playbook_Navigation_Guide.md)
+- [Platform Rebuild Checklist](20_Platform_Rebuild_Checklist.md)
+
+---
+
+# Related Documents
+
+- [Architecture Decisions and Rationale](06_Architecture_Decisions_and_Rationale.md)
+- [Platform Rebuild Checklist](20_Platform_Rebuild_Checklist.md)
+- [Troubleshooting Overview](40_Troubleshooting_Overview.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

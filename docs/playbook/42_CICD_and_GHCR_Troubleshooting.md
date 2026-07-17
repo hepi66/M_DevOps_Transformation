@@ -591,13 +591,25 @@ This guide is complete when the engineer understands:
 * Project-specific lessons learned
 
 The engineer should be capable of diagnosing and resolving routine CI/CD and container registry issues independently.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**ArgoCD Troubleshooting Guide**
+- [ArgoCD Troubleshooting](43_ArgoCD_Troubleshooting.md)
 
-This guide covers synchronization failures, health status issues, GitOps drift, bootstrap problems, and deployment reconciliation failures.
+---
+
+# Related Documents
+
+- [CI/CD and GitHub Actions Guide](13_CICD_and_GitHub_Actions_Guide.md)
+- [GHCR Guide](14_GHCR_Guide.md)
+- [Troubleshooting Overview](40_Troubleshooting_Overview.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

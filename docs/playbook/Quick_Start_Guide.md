@@ -1,20 +1,39 @@
 # Quick Start Guide
 
-> **The fastest way to get productive with the M-DevOps Transformation platform.**
+> **The fastest way to become productive with the M-DevOps Transformation platform.**
+
+---
+
+> **Tip**
+>
+> Open links in a new browser tab using **Ctrl + Click** or the middle mouse button.
+
+
+> **Tip**
+>
+> Open document links in a new browser tab (Ctrl+Click or middle mouse button).
 
 ---
 
 # Purpose
 
-This guide helps engineers quickly identify where to start based on their current task.
+This guide is the primary entry point into the Engineering Playbook.
 
-If you are unsure where to begin, start here.
+Its goal is simple:
+
+**Get you to the correct document in less than one minute.**
+
+If you already know what you want to do, use one of the paths below.
+
+If you are unsure, begin with **"I am new to the project."**
 
 ---
 
-# I am new to the project
+# Choose Your Starting Point
 
-Read:
+## 👋 I am new to the project
+
+Start here:
 
 1. [00_Playbook_Overview.md](00_Playbook_Overview.md)
 2. [01_Architecture_Overview.md](01_Architecture_Overview.md)
@@ -23,49 +42,111 @@ Read:
 
 ---
 
-# I want to rebuild the complete platform
+## 💻 I want to develop the application
 
-Follow:
+Start here:
 
-1. [10_Workstation_Setup_Guide.md](10_Workstation_Setup_Guide.md)
-2. [11_Repository_and_Development_Guide.md](11_Repository_and_Development_Guide.md)
-3. [12_Container_Build_and_Validation_Guide.md](12_Container_Build_and_Validation_Guide.md)
-4. [13_CICD_and_GitHub_Actions_Guide.md](13_CICD_and_GitHub_Actions_Guide.md)
-5. [14_GHCR_Guide.md](14_GHCR_Guide.md)
-6. [15_GitOps_and_ArgoCD_Guide.md](15_GitOps_and_ArgoCD_Guide.md)
-7. [16_Kubernetes_Deployment_and_Runtime_Guide.md](16_Kubernetes_Deployment_and_Runtime_Guide.md)
-8. [17_Platform_Validation_Guide.md](17_Platform_Validation_Guide.md)
-9. [20_Platform_Rebuild_Checklist.md](20_Platform_Rebuild_Checklist.md)
+➡ [11_Repository_and_Development_Guide.md](11_Repository_and_Development_Guide.md)
 
 ---
 
-# I want to understand GitOps
+## 🐳 I want to build a Docker image
 
-Read:
+Start here:
 
-- [03_Golden_Path_End_to_End.md](03_Golden_Path_End_to_End.md)
-- [15_GitOps_and_ArgoCD_Guide.md](15_GitOps_and_ArgoCD_Guide.md)
-
----
-
-# I want to troubleshoot
-
-Start with:
-
-- [40_Troubleshooting_Overview.md](40_Troubleshooting_Overview.md)
-
-Then continue with the appropriate troubleshooting guide.
+➡ [12_Container_Build_and_Validation_Guide.md](12_Container_Build_and_Validation_Guide.md)
 
 ---
 
-# I have a specific question
+## ⚙ I want to understand the CI/CD pipeline
 
-Open:
+Start here:
+
+➡ [13_CICD_and_GitHub_Actions_Guide.md](13_CICD_and_GitHub_Actions_Guide.md)
+
+---
+
+## 🚀 I want to understand GitOps
+
+Start here:
+
+➡ [15_GitOps_and_ArgoCD_Guide.md](15_GitOps_and_ArgoCD_Guide.md)
+
+---
+
+## ☸ I want to understand Kubernetes
+
+Start here:
+
+➡ [16_Kubernetes_Deployment_and_Runtime_Guide.md](16_Kubernetes_Deployment_and_Runtime_Guide.md)
+
+---
+
+## 🔄 I want to rebuild the complete platform
+
+Start here:
+
+➡ [20_Platform_Rebuild_Checklist.md](20_Platform_Rebuild_Checklist.md)
+
+---
+
+## 🖥 I want to operate the platform
+
+Start here:
+
+➡ [30_Daily_Operations_Guide.md](30_Daily_Operations_Guide.md)
+
+---
+
+## 🚨 I need to troubleshoot a problem
+
+Start here:
+
+➡ [40_Troubleshooting_Overview.md](40_Troubleshooting_Overview.md)
+
+---
+
+## ❓ I have a specific question
+
+Start here:
 
 ➡ [Documentation Navigator](Playbook_Navigation_Guide.md)
 
 ---
 
+## 🗺 I want to understand the complete Playbook
+
+Start here:
+
+➡ [Document Roadmap](Document_Roadmap.md)
+
+---
+
+# Which Guide Should I Use?
+
+| If you want to... | Open |
+|-------------------|------|
+| Get started immediately | **Quick Start Guide** |
+| Find a document by question | **Documentation Navigator** |
+| Understand the Playbook structure | **Document Roadmap** |
+
+---
+
+# Related Documents
+
+- [Documentation Navigator](Playbook_Navigation_Guide.md)
+- [Document Roadmap](Document_Roadmap.md)
+- [Engineering Playbook](README.md)
+
+---
+
 Return to:
 
-➡ [Engineering Playbook](README.md)
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)
+
+---
+
+## Navigation Tip
+
+Use **Ctrl + Click** or the middle mouse button to open linked documents in a new browser tab while keeping the current navigation page open.

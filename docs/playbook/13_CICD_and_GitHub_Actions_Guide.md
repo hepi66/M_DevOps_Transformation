@@ -415,13 +415,25 @@ This guide is complete when the engineer understands:
 * Failure diagnosis workflow
 
 The engineer should be capable of interpreting pipeline results and resolving common failures.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Container Registry (GHCR) Guide**
+- [GHCR Guide](14_GHCR_Guide.md)
 
-This explains how deployment artifacts are stored and consumed by downstream platform components.
+---
+
+# Related Documents
+
+- [Container Build and Validation Guide](12_Container_Build_and_Validation_Guide.md)
+- [GHCR Guide](14_GHCR_Guide.md)
+- [CI/CD and GHCR Troubleshooting](42_CICD_and_GHCR_Troubleshooting.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

@@ -328,13 +328,25 @@ This guide is complete when:
 * Container can be stopped cleanly
 
 The engineer now understands the deployable artifact used throughout the platform.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**CI/CD and GitHub Actions Guide**
+- [CI/CD and GitHub Actions Guide](13_CICD_and_GitHub_Actions_Guide.md)
 
-This explains how container creation is automated and integrated into the platform delivery pipeline.
+---
+
+# Related Documents
+
+- [Repository and Development Guide](11_Repository_and_Development_Guide.md)
+- [CI/CD and GitHub Actions Guide](13_CICD_and_GitHub_Actions_Guide.md)
+- [CI/CD and GHCR Troubleshooting](42_CICD_and_GHCR_Troubleshooting.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

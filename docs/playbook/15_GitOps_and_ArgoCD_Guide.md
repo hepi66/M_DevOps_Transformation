@@ -379,13 +379,25 @@ This guide is complete when the engineer understands:
 * Relationship between Git, GHCR, ArgoCD, and Kubernetes
 
 The engineer should be able to explain how a Git change eventually becomes a running deployment.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Kubernetes Deployment and Runtime Guide**
+- [Kubernetes Deployment and Runtime Guide](16_Kubernetes_Deployment_and_Runtime_Guide.md)
 
-This explains how Kubernetes executes and manages the workloads created by the GitOps deployment process.
+---
+
+# Related Documents
+
+- [GHCR Guide](14_GHCR_Guide.md)
+- [Kubernetes Deployment and Runtime Guide](16_Kubernetes_Deployment_and_Runtime_Guide.md)
+- [ArgoCD Troubleshooting](43_ArgoCD_Troubleshooting.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)

@@ -1,11 +1,26 @@
 ---
-title: "ArgoCD Local Operations"
-type: "Cheat Sheet"
-status: "Active"
-version: "1.0"
-owner: "Engineering"
-last_updated: "2026-07-07"
-related_epic: "E03"
+title: Git Daily Workflow
+type: Cheat Sheet
+status: Living Document
+version: 2.2
+owner: Engineering
+last_updated: 2026-07-15
+---
+
+# Git Daily Workflow
+
+> **Purpose**
+>
+> This cheat sheet provides the standard day-to-day Git and GitHub workflow used throughout the project. It serves as a quick reference for common development activities and complements the Engineering Playbook.
+
+---
+
+## Navigation
+
+- 🏠 [Documentation Home](../README.md)
+- 📋 [Engineering Cheat Sheets](README.md)
+- 📘 [Engineering Playbook](../playbook/README.md)
+
 ---
 
 # ArgoCD Local Operations
@@ -242,3 +257,18 @@ When troubleshooting:
 Never skip validation layers.
 
 Always resolve lower-level failures before investigating higher-level components.
+
+---
+
+## Related Documents
+
+- 📘 Engineering Playbook → GitOps workflow and development process
+- 📋 ArgoCD Local Operations
+- 📚 Documentation Architecture
+
+---
+
+## Return to
+
+- 📋 [Engineering Cheat Sheets](README.md)
+- 🏠 [Documentation Home](../README.md)

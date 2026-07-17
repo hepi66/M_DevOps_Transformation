@@ -171,3 +171,9 @@ The Engineering Playbook is based on five principles:
 © 2026 M-DevOps Transformation
 
 **Engineering Playbook**
+
+---
+
+## Navigation Tip
+
+Use **Ctrl + Click** or the middle mouse button to open linked documents in a new browser tab while keeping the current navigation page open.

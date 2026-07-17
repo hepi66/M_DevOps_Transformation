@@ -315,13 +315,25 @@ This guide is considered complete when:
 * Git operations work correctly
 
 The engineer is now prepared to contribute changes to the platform.
-
 ---
 
-# Next Step
+# Next Recommended Reading
 
 Continue with:
 
-**Container Build and Validation Guide**
+- [Container Build and Validation Guide](12_Container_Build_and_Validation_Guide.md)
 
-This introduces the containerization layer that transforms application code into a deployable artifact.
+---
+
+# Related Documents
+
+- [Workstation Setup Guide](10_Workstation_Setup_Guide.md)
+- [Container Build and Validation Guide](12_Container_Build_and_Validation_Guide.md)
+- [Git and GitHub Troubleshooting](41_Git_and_GitHub_Troubleshooting.md)
+
+---
+
+Return to:
+
+- [Engineering Playbook](README.md)
+- [Engineering Documentation Portal](../README.md)
