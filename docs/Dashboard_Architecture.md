@@ -47,6 +47,15 @@ Models, utilities, charts, integrations, and additional abstractions must be add
 
 This document defines architecture principles and boundaries rather than a speculative complete directory tree.
 
+## Operational UI Design Rules
+
+- Operational states use one shared semantic icon and color mapping; individual components must reuse rather than redefine it.
+- Icons are the primary fast-recognition signal in compact operational rows. Long repeated state labels must not dominate them.
+- Status legends belong in shared secondary UI, not inside individual panels; operational dashboard space must not be sacrificed for explanatory legends.
+- Every event in a timeline uses the same compact, human-readable local timestamp format instead of raw machine timestamps.
+- Logs, timelines, and event feeds use compact rows and always have a bounded visible height with overflow scrolling inside the component.
+- Dynamic operational content must not expand indefinitely or destabilize the surrounding dashboard layout.
+
 ## Phase 1 Scope
 
 ### Included

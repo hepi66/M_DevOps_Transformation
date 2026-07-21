@@ -1,7 +1,14 @@
 import streamlit as st
 
+from dashboard.deployments import render_deployments
+from dashboard.environments import render_environments
 from dashboard.layout import render_page_header
 from dashboard.navigation import render_navigation
+from dashboard.operational_detail_viewer import (
+    render_operational_detail_viewer,
+    render_status_legend,
+)
+from dashboard.pipeline import render_delivery_pipeline
 
 
 st.set_page_config(
@@ -30,41 +37,25 @@ if selected_page == "overview":
 """
         )
 
-    operations_column, logs_column = st.columns([2, 1], gap="medium")
+    with st.container(border=True):
+        render_delivery_pipeline()
 
-    with operations_column:
-        with st.container(border=True):
-            st.subheader("Delivery Pipeline")
-            st.markdown(
-                "This region establishes the primary space for a future "
-                "delivery pipeline summary."
-            )
+    deployments_column, environments_column, logs_column = st.columns(
+        3,
+        gap="medium",
+    )
 
-        deployments_column, environments_column = st.columns(2, gap="medium")
+    with deployments_column:
+        with st.container(border=True, height="stretch"):
+            render_deployments()
 
-        with deployments_column:
-            with st.container(border=True):
-                st.subheader("Deployments")
-                st.markdown(
-                    "This region defines where deployment information can be "
-                    "presented in a later phase."
-                )
-
-        with environments_column:
-            with st.container(border=True):
-                st.subheader("Environments")
-                st.markdown(
-                    "This region defines where environment information can be "
-                    "presented in a later phase."
-                )
+    with environments_column:
+        with st.container(border=True, height="stretch"):
+            render_environments()
 
     with logs_column:
         with st.container(border=True, height="stretch"):
-            st.subheader("Log Output")
-            st.markdown(
-                "This region establishes the visual position of the future "
-                "log output viewer. It contains no operational log data."
-            )
+            render_operational_detail_viewer()
 
     with st.container(border=True):
         st.subheader("Dashboard Foundation")
@@ -73,3 +64,5 @@ if selected_page == "overview":
             "to present the progress, capabilities, and outcomes of the "
             "M-DevOps Transformation project."
         )
+
+    render_status_legend()
