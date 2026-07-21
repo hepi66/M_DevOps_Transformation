@@ -3,7 +3,7 @@ import json
 import os
 import re
 import shutil
-import subprocess
+import subprocess  # nosec B404 - required for controlled Git/GitHub CLI commands
 from datetime import datetime
 from pathlib import Path
 from typing import Any
