@@ -1,5 +1,7 @@
 import streamlit as st
 
+from dashboard.layout import render_component_header
+
 
 ENVIRONMENTS = (
     {
@@ -32,7 +34,7 @@ STATUS_INDICATORS = {
 
 def render_environments() -> None:
     """Render the static Phase 1 environment demonstration."""
-    st.subheader("Environments")
+    render_component_header("Environments", "DEMO")
     st.caption("Phase 1 demonstration data")
 
     for environment in ENVIRONMENTS:

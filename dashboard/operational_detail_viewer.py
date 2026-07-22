@@ -10,6 +10,9 @@ from typing import Any
 
 import streamlit as st
 
+from dashboard.formatting import format_dashboard_timestamp
+from dashboard.layout import render_component_header
+
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 
@@ -237,18 +240,6 @@ def _workflow_event_state(conclusion: str | None) -> str:
     return states.get((conclusion or "").lower(), "UNKNOWN")
 
 
-def _format_event_timestamp(timestamp: str | None) -> str:
-    if not timestamp:
-        return "-- --- --:--:--"
-
-    try:
-        event_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00")).astimezone()
-    except (AttributeError, TypeError, ValueError):
-        return "-- --- --:--:--"
-
-    return event_time.strftime("%d %b %H:%M:%S")
-
-
 def _render_event_timeline(events: list[dict[str, str]]) -> None:
     rows = [
         """
@@ -305,7 +296,7 @@ def _render_event_timeline(events: list[dict[str, str]]) -> None:
             event.get("state", "UNKNOWN").upper(),
             EVENT_STATE_STYLES["UNKNOWN"],
         )
-        timestamp = html.escape(_format_event_timestamp(event.get("timestamp")))
+        timestamp = html.escape(format_dashboard_timestamp(event.get("timestamp")))
         subject = html.escape(
             event.get("subject") or event.get("description") or "Event",
             quote=True,
@@ -550,21 +541,17 @@ def _render_github_feed() -> None:
         st.link_button("Open GitHub for investigation", details["url"])
 
 
-def render_status_legend() -> None:
-    """Render the shared dashboard status legend as secondary footer content."""
-    st.caption(
-        "✓ Success · ▶ Running · ◷ Queued · ⚠ Warning · ✕ Failed · "
-        "— Skipped/Cancelled · ℹ Info | GI Git · GH GitHub · CI CI/CD"
-    )
-
-
 def render_operational_detail_viewer() -> None:
     """Render compact operational details from the selected source."""
-    st.subheader("Operational Detail Viewer")
+    source_key = "operational_detail_source"
+    selected_source = st.session_state.get(source_key, "Git / Local Repository")
+    data_source_state = "LOCAL" if selected_source == "Git / Local Repository" else "LIVE"
+    render_component_header("Operational Detail Viewer", data_source_state)
     source = st.selectbox(
         "Source",
         ("Git / Local Repository", "GitHub Status"),
         label_visibility="collapsed",
+        key=source_key,
     )
 
     if source == "Git / Local Repository":

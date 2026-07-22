@@ -1,5 +1,7 @@
 import streamlit as st
 
+from dashboard.layout import render_data_source_indicator
+
 
 PIPELINE_STAGES = (
     {
@@ -9,6 +11,7 @@ PIPELINE_STAGES = (
         "platform_label": "Dev",
         "purpose": "A software change is created and committed.",
         "status": "Completed",
+        "data_source_state": "LOCAL",
     },
     {
         "name": "Source Control",
@@ -17,6 +20,7 @@ PIPELINE_STAGES = (
         "platform_label": "GitHub",
         "purpose": "The change is stored, reviewed, and versioned.",
         "status": "Completed",
+        "data_source_state": "LIVE",
     },
     {
         "name": "CI & Quality",
@@ -25,6 +29,7 @@ PIPELINE_STAGES = (
         "platform_label": "Actions",
         "purpose": "Automated quality gates validate the change.",
         "status": "Completed",
+        "data_source_state": "LIVE",
     },
     {
         "name": "Image Build",
@@ -33,6 +38,7 @@ PIPELINE_STAGES = (
         "platform_label": "Docker",
         "purpose": "A deployable container image is created.",
         "status": "Completed",
+        "data_source_state": "LOCAL",
     },
     {
         "name": "Artifact Registry",
@@ -41,6 +47,7 @@ PIPELINE_STAGES = (
         "platform_label": "GHCR",
         "purpose": "The immutable image is published for delivery.",
         "status": "Completed",
+        "data_source_state": "LIVE",
     },
     {
         "name": "GitOps Reconciliation",
@@ -49,6 +56,7 @@ PIPELINE_STAGES = (
         "platform_label": "Argo CD",
         "purpose": "Desired state changes are detected and synchronized.",
         "status": "Active",
+        "data_source_state": "DEMO",
     },
     {
         "name": "Runtime",
@@ -57,6 +65,7 @@ PIPELINE_STAGES = (
         "platform_label": "K8s",
         "purpose": "The workload is rolled out and operated.",
         "status": "Upcoming",
+        "data_source_state": "DEMO",
     },
 )
 
@@ -76,6 +85,10 @@ def render_delivery_pipeline() -> None:
         connector = " →" if index < len(PIPELINE_STAGES) - 1 else ""
 
         with pipeline_columns[index]:
+            _, stage_header = st.columns([1, 5], gap="xxsmall")
+            render_data_source_indicator(
+                stage["data_source_state"],
+                stage_header,
+            )
             st.caption(f"**{stage['label']}**{connector}")
-            st.caption(stage["platform_label"])
-            st.caption(stage["status"])
+            st.caption(f"{stage['platform_label']} · {stage['status']}")
