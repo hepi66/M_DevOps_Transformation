@@ -2,12 +2,13 @@ import streamlit as st
 
 from dashboard.deployments import render_deployments
 from dashboard.environments import render_environments
-from dashboard.layout import render_page_header
-from dashboard.navigation import render_navigation
-from dashboard.operational_detail_viewer import (
-    render_operational_detail_viewer,
-    render_status_legend,
+from dashboard.layout import (
+    render_dashboard_footer,
+    render_page_header,
 )
+from dashboard.navigation import render_navigation
+from dashboard.operational_detail_viewer import render_operational_detail_viewer
+from dashboard.overview_cards import render_platform_cards, render_summary_cards
 from dashboard.pipeline import render_delivery_pipeline
 
 
@@ -26,16 +27,7 @@ if selected_page == "overview":
         "and outcomes of the M-DevOps Transformation project.",
     )
 
-    with st.container(border=True):
-        st.subheader("Architecture Status")
-        st.markdown(
-            """
-- **Modular Dashboard:** Foundation established
-- **Dummy Data:** Planned for Phase 1
-- **Future GitHub Integration:** Later phase
-- **Future Kubernetes Integration:** Later phase
-"""
-        )
+    render_summary_cards()
 
     with st.container(border=True):
         render_delivery_pipeline()
@@ -57,12 +49,6 @@ if selected_page == "overview":
         with st.container(border=True, height="stretch"):
             render_operational_detail_viewer()
 
-    with st.container(border=True):
-        st.subheader("Dashboard Foundation")
-        st.info(
-            "This is the foundation of the future DevOps Dashboard, designed "
-            "to present the progress, capabilities, and outcomes of the "
-            "M-DevOps Transformation project."
-        )
+    render_platform_cards()
 
-    render_status_legend()
+    render_dashboard_footer()

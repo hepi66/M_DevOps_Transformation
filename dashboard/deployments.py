@@ -1,5 +1,7 @@
 import streamlit as st
 
+from dashboard.layout import render_component_header
+
 
 DEPLOYMENTS = (
     {
@@ -28,7 +30,7 @@ STATUS_INDICATORS = {
 
 def render_deployments() -> None:
     """Render the static Phase 1 deployment demonstration."""
-    st.subheader("Deployments")
+    render_component_header("Deployments", "DEMO")
     st.caption("Phase 1 demonstration data")
 
     for deployment in DEPLOYMENTS:
