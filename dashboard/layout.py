@@ -34,6 +34,13 @@ def _resolve_build_information() -> str:
 
 
 BUILD_INFORMATION = _resolve_build_information()
+OPERATIONAL_SOURCE_LEGEND = (
+    ("GI", "Git"),
+    ("GH", "GitHub"),
+    ("CI", "CI/CD"),
+    ("DB", "Docker Build"),
+    ("CR", "GHCR"),
+)
 
 
 def render_page_header(title: str, description: str) -> None:
@@ -67,6 +74,10 @@ def render_data_source_indicator(data_source_state: str, container=st) -> None:
 def render_dashboard_footer() -> None:
     """Render the single-line dashboard legend and stable build information."""
     build_information = html.escape(BUILD_INFORMATION)
+    source_legend = " · ".join(
+        f"{html.escape(abbreviation)} {html.escape(name)}"
+        for abbreviation, name in OPERATIONAL_SOURCE_LEGEND
+    )
     st.html(
         f"""
 <style>
@@ -90,7 +101,7 @@ def render_dashboard_footer() -> None:
 }}
 </style>
 <div class="dashboard-footer-line" role="contentinfo">
-  <span class="dashboard-footer-legend">✓ Success · ▶ Running · ◷ Queued · ⚠ Warning · ✕ Failed · — Skipped/Cancelled · ℹ Info | GI Git · GH GitHub · CI CI/CD | 🧪 DEMO · 💻 LOCAL · 📡 LIVE</span>
+  <span class="dashboard-footer-legend">✓ Success · ▶ Running · ◷ Queued · ⚠ Warning · ✕ Failed · — Skipped/Cancelled · ℹ Info | {source_legend} | 🧪 DEMO · 💻 LOCAL · 📡 LIVE</span>
   <span class="dashboard-footer-build">Build {build_information}</span>
 </div>
 """

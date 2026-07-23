@@ -164,10 +164,16 @@ pip list
 
 Verify expected dependencies are available.
 
-If dependencies are missing:
+For application runtime dependencies only:
 
 ```powershell id="6npt4g"
 pip install -r requirements.txt
+```
+
+For development, including the local CI quality tools:
+
+```powershell
+python -m pip install -r requirements-dev.txt
 ```
 
 ---
@@ -192,19 +198,24 @@ This confirms the local development environment is functional.
 
 # Local Testing
 
-Execute automated tests:
+Install the development dependencies once:
 
-```powershell id="vlxg1v"
-pytest
+```powershell
+python -m pip install -r requirements-dev.txt
 ```
 
-Expected result:
+Execute the same quality checks used by CI:
 
-```text id="2b5m8k"
-All tests pass.
+```powershell
+python -m pytest
+python -m ruff check .
+python -m bandit -r . -x ./tests,./venv,./.venv
 ```
 
-Failures should be resolved before creating commits.
+The local Bandit command additionally excludes local virtual-environment
+directories. These directories do not exist in the GitHub Actions workspace.
+
+All checks should pass before creating commits.
 
 ---
 
@@ -280,7 +291,19 @@ streamlit run app.py
 Tests:
 
 ```powershell id="x3w5cc"
-pytest
+python -m pytest
+```
+
+Linting:
+
+```powershell
+python -m ruff check .
+```
+
+Security:
+
+```powershell
+python -m bandit -r . -x ./tests,./venv,./.venv
 ```
 
 Git Status:
@@ -292,7 +315,7 @@ git status
 Dependency Installation:
 
 ```powershell id="0bkv2j"
-pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 ```
 
 Virtual Environment Activation:
