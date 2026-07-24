@@ -8,7 +8,6 @@ from dashboard.operational_detail_viewer import (
     get_ghcr_stage_data,
 )
 
-
 PipelineSource = Literal["DEMO", "LOCAL", "LIVE"]
 PipelineData = dict[str, str | None]
 PipelineDataProvider = Callable[[dict[str, Any] | None], PipelineData | None]
@@ -191,7 +190,7 @@ def get_pipeline_stages(
 
         try:
             provider_data = stage.data_provider(runtime_snapshot)
-        except Exception:  # Keep the static stage available if retrieval fails.
+        except Exception:  # noqa: BLE001 - provider fallback handles all failures
             provider_data = None
 
         if not provider_data:

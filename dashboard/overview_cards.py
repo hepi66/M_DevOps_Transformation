@@ -4,7 +4,6 @@ from dashboard.formatting import format_dashboard_timestamp
 from dashboard.layout import render_component_header
 from dashboard.operational_detail_viewer import get_ghcr_data
 
-
 SUMMARY_CARD_TITLES = (
     "Deployment Frequency",
     "Lead Time for Changes",

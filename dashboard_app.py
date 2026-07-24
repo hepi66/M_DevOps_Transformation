@@ -16,7 +16,6 @@ from dashboard.operational_detail_viewer import (
 from dashboard.overview_cards import render_platform_cards, render_summary_cards
 from dashboard.pipeline import render_delivery_pipeline
 
-
 st.set_page_config(
     page_title="M-DevOps Dashboard",
     page_icon="📊",
@@ -46,21 +45,18 @@ if selected_page == "overview":
         gap="medium",
     )
 
-    with deployments_column:
-        with st.container(border=True, height="stretch"):
-            render_deployments()
+    with deployments_column, st.container(border=True, height="stretch"):
+        render_deployments()
 
-    with environments_column:
-        with st.container(border=True, height="stretch"):
-            render_environments()
+    with environments_column, st.container(border=True, height="stretch"):
+        render_environments()
 
-    with logs_column:
-        with st.container(
-            border=True,
-            height="stretch",
-            key="operational-detail-viewer-card",
-        ):
-            render_operational_detail_viewer(runtime_snapshot)
+    with logs_column, st.container(
+        border=True,
+        height="stretch",
+        key="operational-detail-viewer-card",
+    ):
+        render_operational_detail_viewer(runtime_snapshot)
 
     render_platform_cards(runtime_snapshot)
 

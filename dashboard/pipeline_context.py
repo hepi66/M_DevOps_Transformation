@@ -2,7 +2,6 @@ from collections.abc import Mapping
 
 from dashboard.operational_events import OperationalEvent
 
-
 PIPELINE_STAGE_FILTERS = (
     "All",
     "Code",

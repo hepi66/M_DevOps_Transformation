@@ -2,7 +2,6 @@ import streamlit as st
 
 from dashboard.layout import render_component_header
 
-
 ENVIRONMENTS = (
     {
         "environment": "production",

@@ -5,7 +5,6 @@ import streamlit as st
 from dashboard.pipeline_context import selected_pipeline_stage
 from dashboard.pipeline_model import PipelineStage, get_pipeline_stages
 
-
 ASSET_DIRECTORY = Path(__file__).resolve().parent / "assets"
 CI_WORKFLOW_ICON = ASSET_DIRECTORY / "ci-workflow.svg"
 PIPELINE_STAGE_ICONS = {
@@ -77,7 +76,7 @@ def _render_product_icon(
 
     try:
         card.image(str(icon_path), width=width)
-    except Exception:  # A damaged optional asset must not break the dashboard.
+    except Exception:  # noqa: BLE001 - optional asset failure must stay isolated
         return
 
 
@@ -137,19 +136,18 @@ def render_delivery_pipeline(runtime_snapshot: dict | None = None) -> None:
             if stage.identifier == selected_stage:
                 card_key += "-selected"
 
-            with pipeline_columns[index * 2]:
-                with st.container(
-                    border=True,
-                    height=PIPELINE_CARD_HEIGHT,
-                    key=card_key,
-                ):
-                    if stage.identifier == "ci":
-                        _render_product_stage_card(stage, CI_WORKFLOW_ICON)
-                    else:
-                        _render_standard_pipeline_stage(
-                            stage,
-                            PIPELINE_STAGE_ICONS[stage.identifier],
-                        )
+            with pipeline_columns[index * 2], st.container(
+                border=True,
+                height=PIPELINE_CARD_HEIGHT,
+                key=card_key,
+            ):
+                if stage.identifier == "ci":
+                    _render_product_stage_card(stage, CI_WORKFLOW_ICON)
+                else:
+                    _render_standard_pipeline_stage(
+                        stage,
+                        PIPELINE_STAGE_ICONS[stage.identifier],
+                    )
 
             if index < len(pipeline_stages) - 1:
                 with pipeline_columns[index * 2 + 1]:

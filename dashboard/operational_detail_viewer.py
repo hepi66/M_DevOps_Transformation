@@ -25,7 +25,6 @@ from dashboard.pipeline_context import (
     pipeline_stage_source,
 )
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 
 EVENT_STATE_STYLES = {
