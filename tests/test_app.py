@@ -6,11 +6,23 @@ from dashboard import operational_detail_viewer as viewer
 from dashboard import overview_cards
 from dashboard import pipeline
 from dashboard import navigation
-from dashboard.layout import OPERATIONAL_SOURCE_LEGEND
-from dashboard.pipeline_model import PIPELINE_STAGES
+from dashboard.layout import (
+    OPERATIONAL_SOURCE_LEGEND,
+    PIPELINE_CONTEXT_ACCENT,
+)
+from dashboard.pipeline_model import PIPELINE_STAGES, get_pipeline_stages
 from dashboard.operational_events import (
     OperationalEvent,
     order_operational_events,
+)
+from dashboard.pipeline_context import (
+    PIPELINE_STAGE_FILTERS,
+    PIPELINE_STAGE_CONTEXT_COLORS,
+    event_pipeline_stage,
+    filter_events_for_stage,
+    pipeline_source_context_color,
+    pipeline_stage_context_color,
+    selected_pipeline_stage,
 )
 
 
@@ -848,9 +860,13 @@ def test_detailed_history_is_limited_to_normalized_run():
 @pytest.mark.parametrize(
     ("selection", "expected_sources"),
     [
-        ("GitHub Status", {"GI", "GH", "CI"}),
-        ("Docker Build", {"CI", "DB"}),
+        ("Code", {"GI"}),
+        ("GitHub", {"GH"}),
+        ("CI", {"CI"}),
+        ("Build", {"DB"}),
         ("GHCR", {"CR"}),
+        ("Argo CD", set()),
+        ("Kubernetes", set()),
     ],
 )
 def test_categorized_views_use_shared_renderer(
@@ -870,13 +886,45 @@ def test_all_is_default_and_combines_all_events(monkeypatch):
         event.source_abbreviation for event in rendered
     }
     assert viewer.st.selectbox.call_args.args[1][0] == "All"
-    assert viewer.st.selectbox.call_args.args[1] == (
-        "All",
-        "Git / Local Repository",
-        "GitHub Status",
-        "Docker Build",
-        "GHCR",
-    )
+    assert viewer.st.selectbox.call_args.args[1] == PIPELINE_STAGE_FILTERS
+
+
+def test_operational_sources_map_to_pipeline_stages():
+    expected = {
+        "GI": "Code",
+        "GH": "GitHub",
+        "CI": "CI",
+        "DB": "Build",
+        "CR": "GHCR",
+    }
+
+    for source, stage in expected.items():
+        assert event_pipeline_stage(
+            _event(None, stage, 1, source=source)
+        ) == stage
+
+
+def test_stage_filter_preserves_event_content_and_order():
+    events = [
+        _event("2026-07-22T08:55:00Z", "CI latest", 1, source="CI"),
+        _event("2026-07-22T08:54:00Z", "Build", 1, source="DB"),
+        _event("2026-07-22T08:53:00Z", "CI older", 1, source="CI"),
+    ]
+
+    filtered = filter_events_for_stage(events, "CI")
+
+    assert [event.message for event in filtered] == ["CI latest", "CI older"]
+
+
+def test_user_selected_stage_context_is_preserved():
+    state = {"operational_detail_source": "CI"}
+
+    assert selected_pipeline_stage(state) == "ci"
+    assert state["operational_detail_source"] == "CI"
+
+
+def test_all_does_not_fabricate_an_active_stage():
+    assert selected_pipeline_stage({"operational_detail_source": "All"}) is None
 
 
 def test_filter_change_uses_one_github_snapshot(monkeypatch):
@@ -1045,7 +1093,7 @@ def test_footer_legend_contains_docker_build():
     assert ("CR", "GHCR") in OPERATIONAL_SOURCE_LEGEND
 
 
-def test_build_pipeline_interaction_selects_docker_build(monkeypatch):
+def test_build_pipeline_interaction_selects_build_stage(monkeypatch):
     fake_streamlit = _PipelineStreamlit()
     monkeypatch.setattr(pipeline, "st", fake_streamlit)
     monkeypatch.setattr(
@@ -1053,12 +1101,304 @@ def test_build_pipeline_interaction_selects_docker_build(monkeypatch):
         "get_pipeline_stages",
         lambda _runtime_snapshot: PIPELINE_STAGES,
     )
-    monkeypatch.setattr(pipeline, "render_data_source_indicator", Mock())
+    monkeypatch.setattr(pipeline, "_render_product_stage_card", Mock())
 
     pipeline.render_delivery_pipeline()
 
-    assert fake_streamlit.session_state["operational_detail_source"] == "Docker Build"
+    assert fake_streamlit.session_state["operational_detail_source"] == "Build"
     fake_streamlit.rerun.assert_called_once_with()
+
+
+@pytest.mark.parametrize(
+    ("raw_status", "conclusion", "expected_status"),
+    [
+        ("queued", None, "Queued"),
+        ("waiting", None, "Queued"),
+        ("in_progress", None, "Running"),
+        ("completed", "success", "Success"),
+        ("completed", "failure", "Failed"),
+        ("completed", "timed_out", "Failed"),
+        ("completed", "cancelled", "Cancelled"),
+        ("completed", None, "Unavailable"),
+    ],
+)
+def test_ci_pipeline_stage_projects_supported_live_states(
+    raw_status,
+    conclusion,
+    expected_status,
+):
+    snapshot = {
+        "github_actions": {
+            "availability": "available",
+            "workflow": {
+                "number": 85,
+                "status": raw_status,
+                "conclusion": conclusion,
+                "headBranch": "main",
+                "updatedAt": "2026-07-23T09:53:25Z",
+            },
+        },
+    }
+
+    ci_stage = next(
+        stage
+        for stage in get_pipeline_stages(snapshot)
+        if stage.identifier == "ci"
+    )
+
+    assert ci_stage.status == expected_status
+    assert ci_stage.source_classification == "LIVE"
+    assert ci_stage.details == "Run #85 · main"
+
+
+def test_ci_pipeline_stage_distinguishes_demo_and_unavailable():
+    demo_stage = next(
+        stage
+        for stage in get_pipeline_stages()
+        if stage.identifier == "ci"
+    )
+    unavailable_stage = next(
+        stage
+        for stage in get_pipeline_stages(
+            {
+                "github_actions": {
+                    "availability": "unavailable",
+                    "reason": "Workflow request failed.",
+                },
+            }
+        )
+        if stage.identifier == "ci"
+    )
+
+    assert (demo_stage.status, demo_stage.source_classification) == (
+        "Demo",
+        "DEMO",
+    )
+    assert (
+        unavailable_stage.status,
+        unavailable_stage.source_classification,
+    ) == ("Unavailable", "LIVE")
+
+
+def test_ci_pipeline_stage_uses_supplied_snapshot_without_retrieval(
+    monkeypatch,
+):
+    snapshot_loader = Mock(side_effect=AssertionError("unexpected retrieval"))
+    monkeypatch.setattr(viewer, "load_dashboard_snapshot", snapshot_loader)
+
+    ci_stage = next(
+        stage
+        for stage in get_pipeline_stages(
+            {
+                "github_actions": {
+                    "availability": "available",
+                    "workflow": {
+                        "status": "completed",
+                        "conclusion": "success",
+                    },
+                },
+            }
+        )
+        if stage.identifier == "ci"
+    )
+
+    assert ci_stage.status == "Success"
+    snapshot_loader.assert_not_called()
+
+
+def test_ci_pipeline_renderer_uses_badge_icon_and_existing_stage(monkeypatch):
+    streamlit = MagicMock()
+    header = MagicMock()
+    streamlit.container.return_value = header
+    header.button.return_value = False
+    monkeypatch.setattr(pipeline, "st", streamlit)
+    ci_stage = next(
+        stage
+        for stage in get_pipeline_stages(
+            {
+                "github_actions": {
+                    "availability": "available",
+                    "workflow": {
+                        "status": "in_progress",
+                        "number": 85,
+                    },
+                },
+            }
+        )
+        if stage.identifier == "ci"
+    )
+
+    pipeline._render_product_stage_card(
+        ci_stage,
+        pipeline.CI_WORKFLOW_ICON,
+    )
+
+    header.image.assert_called_once_with(
+        str(pipeline.CI_WORKFLOW_ICON),
+        width=64,
+    )
+    header.button.assert_called_once_with(
+        "CI",
+        key="pipeline-stage-ci",
+        type="tertiary",
+        width="content",
+    )
+    header.caption.assert_called_once_with(
+        "GitHub Actions",
+        width="content",
+        text_alignment="center",
+    )
+    header.badge.assert_called_once_with("RUNNING", color="blue")
+
+
+def test_ci_pipeline_renderer_falls_back_when_icon_is_missing(monkeypatch):
+    streamlit = MagicMock()
+    header = MagicMock()
+    streamlit.container.return_value = header
+    header.button.return_value = False
+    monkeypatch.setattr(pipeline, "st", streamlit)
+    monkeypatch.setattr(
+        pipeline,
+        "CI_WORKFLOW_ICON",
+        pipeline.CI_WORKFLOW_ICON.with_name("missing.svg"),
+    )
+    ci_stage = next(
+        stage for stage in PIPELINE_STAGES if stage.identifier == "ci"
+    )
+
+    pipeline._render_product_stage_card(
+        ci_stage,
+        pipeline.CI_WORKFLOW_ICON,
+    )
+
+    header.image.assert_not_called()
+    header.caption.assert_called_once_with(
+        "GitHub Actions",
+        width="content",
+        text_alignment="center",
+    )
+
+
+def test_ci_pipeline_renderer_tolerates_missing_optional_details(monkeypatch):
+    streamlit = MagicMock()
+    streamlit.container.return_value = MagicMock()
+    streamlit.container.return_value.button.return_value = False
+    monkeypatch.setattr(pipeline, "st", streamlit)
+    ci_stage = next(
+        stage for stage in PIPELINE_STAGES if stage.identifier == "ci"
+    )
+
+    pipeline._render_product_stage_card(
+        ci_stage,
+        pipeline.CI_WORKFLOW_ICON,
+    )
+
+    streamlit.container.return_value.badge.assert_called_once()
+
+
+def test_only_ci_stage_uses_visual_pilot_renderer(monkeypatch):
+    fake_streamlit = _PipelineStreamlit()
+    monkeypatch.setattr(pipeline, "st", fake_streamlit)
+    monkeypatch.setattr(
+        pipeline,
+        "get_pipeline_stages",
+        lambda _runtime_snapshot: PIPELINE_STAGES,
+    )
+    ci_renderer = Mock()
+    standard_renderer = Mock()
+    transition_renderer = Mock()
+    monkeypatch.setattr(pipeline, "_render_product_stage_card", ci_renderer)
+    monkeypatch.setattr(
+        pipeline,
+        "_render_standard_pipeline_stage",
+        standard_renderer,
+    )
+    monkeypatch.setattr(pipeline, "_render_transition", transition_renderer)
+
+    pipeline.render_delivery_pipeline({})
+
+    assert ci_renderer.call_count == 1
+    assert ci_renderer.call_args.args[0].identifier == "ci"
+    assert ci_renderer.call_args.args[1] == pipeline.CI_WORKFLOW_ICON
+    assert [
+        call.args[0].identifier for call in standard_renderer.call_args_list
+    ] == [
+        "code",
+        "github",
+        "build",
+        "ghcr",
+        "argocd",
+        "kubernetes",
+    ]
+    assert transition_renderer.call_count == 6
+
+
+def test_pipeline_grid_uses_equal_cards_and_six_arrow_slots():
+    assert len(PIPELINE_STAGES) == 7
+    assert len(pipeline.PIPELINE_COLUMN_WIDTHS) == 13
+    assert pipeline.PIPELINE_COLUMN_WIDTHS[::2] == (1.0,) * 7
+    assert pipeline.PIPELINE_COLUMN_WIDTHS[1::2] == (0.14,) * 6
+    assert [stage.identifier for stage in PIPELINE_STAGES] == [
+        "code",
+        "github",
+        "ci",
+        "build",
+        "ghcr",
+        "argocd",
+        "kubernetes",
+    ]
+
+
+def test_transition_renders_without_a_container_or_card_border(monkeypatch):
+    streamlit = MagicMock()
+    monkeypatch.setattr(pipeline, "st", streamlit)
+
+    pipeline._render_transition(0)
+
+    streamlit.markdown.assert_called_once_with("→")
+    streamlit.container.assert_not_called()
+
+
+def test_standard_stage_omits_pipeline_source_placeholder(monkeypatch):
+    streamlit = MagicMock()
+    streamlit.button.return_value = False
+    monkeypatch.setattr(pipeline, "st", streamlit)
+    github_stage = next(
+        stage for stage in PIPELINE_STAGES if stage.identifier == "github"
+    )
+
+    pipeline._render_standard_pipeline_stage(
+        github_stage,
+        pipeline.PIPELINE_STAGE_ICONS["github"],
+    )
+
+    streamlit.container.assert_called_once_with(
+        horizontal_alignment="center",
+        vertical_alignment="center",
+        gap="medium",
+    )
+    streamlit.container.return_value.image.assert_called_once_with(
+        str(pipeline.PIPELINE_STAGE_ICONS["github"]),
+        width=54,
+    )
+
+
+def test_pipeline_context_uses_dedicated_magenta_accent():
+    assert PIPELINE_CONTEXT_ACCENT == "#D946EF"
+
+
+def test_each_pipeline_stage_has_the_established_context_color():
+    assert PIPELINE_STAGE_CONTEXT_COLORS == {
+        "code": "#F7E263",
+        "github": "#8B5CF6",
+        "ci": "#D946EF",
+        "build": "#06B6D4",
+        "ghcr": "#F59E0B",
+        "argocd": "#F97360",
+        "kubernetes": "#73B0E7",
+    }
+    assert pipeline_stage_context_color("Kubernetes") == "#73B0E7"
+    assert pipeline_source_context_color("DB") == "#06B6D4"
 
 
 @pytest.mark.parametrize(
@@ -1294,6 +1634,21 @@ class _PipelineColumn:
     def __exit__(self, *args):
         return False
 
+    def markdown(self, *args, **kwargs):
+        return None
+
+    def button(self, label, **kwargs):
+        return label.startswith("Build")
+
+    def caption(self, *args, **kwargs):
+        return None
+
+    def image(self, *args, **kwargs):
+        return None
+
+    def container(self, **kwargs):
+        return _PipelineColumn()
+
 
 class _PipelineStreamlit:
     def __init__(self):
@@ -1306,9 +1661,15 @@ class _PipelineStreamlit:
     def caption(self, *args, **kwargs):
         return None
 
+    def markdown(self, *args, **kwargs):
+        return None
+
     def columns(self, specification, **kwargs):
         count = specification if isinstance(specification, int) else len(specification)
         return [_PipelineColumn() for _ in range(count)]
+
+    def container(self, **kwargs):
+        return _PipelineColumn()
 
     def button(self, label, **kwargs):
         return label.startswith("Build")

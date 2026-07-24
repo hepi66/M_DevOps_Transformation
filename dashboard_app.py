@@ -4,6 +4,7 @@ from dashboard.deployments import render_deployments
 from dashboard.environments import render_environments
 from dashboard.layout import (
     render_dashboard_footer,
+    render_dashboard_styles,
     render_page_header,
 )
 from dashboard.navigation import render_navigation
@@ -21,6 +22,7 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
 )
+render_dashboard_styles()
 
 selected_page = render_navigation(clear_dashboard_snapshot)
 
@@ -53,7 +55,11 @@ if selected_page == "overview":
             render_environments()
 
     with logs_column:
-        with st.container(border=True, height="stretch"):
+        with st.container(
+            border=True,
+            height="stretch",
+            key="operational-detail-viewer-card",
+        ):
             render_operational_detail_viewer(runtime_snapshot)
 
     render_platform_cards(runtime_snapshot)

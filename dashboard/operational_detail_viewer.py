@@ -17,6 +17,13 @@ from dashboard.operational_events import (
     OperationalEvent,
     order_operational_events,
 )
+from dashboard.pipeline_context import (
+    PIPELINE_STAGE_FILTERS,
+    filter_events_for_stage,
+    normalize_pipeline_filter,
+    pipeline_source_context_color,
+    pipeline_stage_source,
+)
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
@@ -323,7 +330,10 @@ def _operational_event(
     )
 
 
-def _render_event_timeline(events: list[OperationalEvent]) -> None:
+def _render_event_timeline(
+    events: list[OperationalEvent],
+    highlighted_source: str | None = None,
+) -> None:
     rows = [
         """
 <style>
@@ -394,11 +404,17 @@ def _render_event_timeline(events: list[OperationalEvent]) -> None:
         )
         state = html.escape(event.status.replace("_", " ").title())
         color = EVENT_ICON_COLORS.get(event.icon, EVENT_ICON_COLORS["?"])
+        source_class = "event-source"
+        source_style = ""
+        if event.source_abbreviation == highlighted_source:
+            source_class += " event-source-context"
+            context_color = pipeline_source_context_color(highlighted_source)
+            source_style = f' style="color: {context_color}"'
         rows.append(
             f'<div class="event-row {html.escape(event.classification)}" '
             f'role="row">'
             f'<span class="event-time" role="cell">{timestamp}</span>'
-            f'<span class="event-source" role="cell">'
+            f'<span class="{source_class}" role="cell"{source_style}>'
             f'{html.escape(event.source_abbreviation)}</span>'
             f'<span class="event-state" role="cell" aria-label="{state}" '
             f'style="color: {color}">{event.icon}</span>'
@@ -1702,6 +1718,22 @@ def _render_context_action(
             "Open GHCR Package",
             (details.get("ghcr") or {}).get("package_url"),
         ),
+        "Code": (
+            "Open Repository",
+            details.get("repository_url"),
+        ),
+        "GitHub": (
+            "Open Repository",
+            details.get("repository_url"),
+        ),
+        "CI": (
+            "Open Latest Pipeline Run",
+            latest_workflow.get("url"),
+        ),
+        "Build": (
+            "Open GitHub Actions Run",
+            workflow.get("url"),
+        ),
     }
     label, url = actions.get(source, (None, None))
     if not url:
@@ -1740,8 +1772,44 @@ def _timeline_presentation_events(
     ]
 
 
-def _render_operational_timeline(events: list[OperationalEvent]) -> None:
-    _render_event_timeline(_timeline_presentation_events(events))
+def _render_operational_timeline(
+    events: list[OperationalEvent],
+    highlighted_source: str | None = None,
+) -> None:
+    _render_event_timeline(
+        _timeline_presentation_events(events),
+        highlighted_source,
+    )
+
+
+def _render_stage_timeline(
+    source: str,
+    runtime_snapshot: dict[str, Any] | None,
+) -> None:
+    """Render the shared timeline for All or one pipeline-stage context."""
+    details = (
+        runtime_snapshot
+        if runtime_snapshot is not None
+        else load_dashboard_snapshot()
+    )
+    all_events = [
+        *_load_local_repository_events(),
+        *_build_github_feed(details),
+        *_build_docker_build_feed(details),
+        *_build_ghcr_feed(details),
+    ]
+    events = (
+        all_events
+        if source == "All"
+        else filter_events_for_stage(all_events, source)
+    )
+
+    if source != "All":
+        st.caption(f"◆ PIPELINE CONTEXT · {source}")
+    _render_refresh_time(details)
+    _render_operational_context(details)
+    _render_operational_timeline(events, pipeline_stage_source(source))
+    _render_context_action(details, source=source)
 
 
 def render_operational_detail_viewer(
@@ -1749,52 +1817,23 @@ def render_operational_detail_viewer(
 ) -> None:
     """Render compact operational details from the selected source."""
     source_key = "operational_detail_source"
-    selected_source = st.session_state.get(source_key, "All")
-    data_source_state = "LOCAL" if selected_source == "Git / Local Repository" else "LIVE"
-    render_component_header("Operational Detail Viewer", data_source_state)
-    source = st.selectbox(
-        "Source",
-        (
-            "All",
-            "Git / Local Repository",
-            "GitHub Status",
-            "Docker Build",
-            "GHCR",
-        ),
-        label_visibility="collapsed",
-        key=source_key,
+    selected_source = normalize_pipeline_filter(
+        st.session_state.get(source_key, "All")
     )
-
-    if source == "Git / Local Repository":
-        _render_operational_timeline(_load_local_repository_events())
-        return
-
-    details = (
-        runtime_snapshot
-        if runtime_snapshot is not None
-        else load_dashboard_snapshot()
+    if st.session_state.get(source_key) != selected_source:
+        st.session_state[source_key] = selected_source
+    viewer_key = (
+        "operational-detail-viewer-selected"
+        if selected_source != "All"
+        else "operational-detail-viewer"
     )
-    _render_refresh_time(details)
-    _render_operational_context(details)
-    github_events = _build_github_feed(details)
-    docker_build_events = _build_docker_build_feed(details)
-    ghcr_events = _build_ghcr_feed(details)
-
-    if source == "All":
-        events = [
-            *_load_local_repository_events(),
-            *github_events,
-            *docker_build_events,
-            *ghcr_events,
-        ]
-        _render_operational_timeline(events)
-        _render_context_action(details, source=source)
-    elif source == "GitHub Status":
-        _render_operational_timeline(github_events)
-        _render_context_action(details, source=source)
-    elif source == "Docker Build":
-        _render_operational_timeline(docker_build_events)
-        _render_context_action(details, source=source)
-    elif source == "GHCR":
-        _render_operational_timeline(ghcr_events)
-        _render_context_action(details, source=source)
+    with st.container(key=viewer_key):
+        data_source_state = "LOCAL" if selected_source == "Code" else "LIVE"
+        render_component_header("Operational Detail Viewer", data_source_state)
+        source = st.selectbox(
+            "Source",
+            PIPELINE_STAGE_FILTERS,
+            label_visibility="collapsed",
+            key=source_key,
+        )
+        _render_stage_timeline(source, runtime_snapshot)

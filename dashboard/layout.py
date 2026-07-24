@@ -5,12 +5,18 @@ from pathlib import Path
 
 import streamlit as st
 
+from dashboard.pipeline_context import (
+    PIPELINE_STAGE_CONTEXT_COLORS,
+    pipeline_stage_context_color,
+    selected_pipeline_stage,
+)
 
 DATA_SOURCE_STATES = {
     "DEMO": "🧪 DEMO",
     "LOCAL": "💻 LOCAL",
     "LIVE": "📡 LIVE",
 }
+PIPELINE_CONTEXT_ACCENT = PIPELINE_STAGE_CONTEXT_COLORS["ci"]
 
 
 def _resolve_build_information() -> str:
@@ -48,6 +54,77 @@ def render_page_header(title: str, description: str) -> None:
     st.title(title)
     st.write(description)
     st.write("")
+
+
+def render_dashboard_styles() -> None:
+    """Render centralized presentation rules shared across dashboard regions."""
+    context_accent = pipeline_stage_context_color(
+        selected_pipeline_stage(st.session_state)
+    )
+    st.html(
+        f"""
+<style>
+:root {{
+    --pipeline-context-accent: {context_accent};
+}}
+[class*="st-key-pipeline-stage-card-"][class*="-selected"] {{
+    border-color: var(--pipeline-context-accent) !important;
+    box-shadow:
+        inset 0 0 0 1px var(--pipeline-context-accent),
+        0 0 0.75rem color-mix(
+            in srgb,
+            var(--pipeline-context-accent) 20%,
+            transparent
+        );
+}}
+.st-key-operational-detail-viewer-card:has(
+    .st-key-operational-detail-viewer-selected
+) {{
+    border-color: var(--pipeline-context-accent) !important;
+    box-shadow:
+        0 0 0.75rem color-mix(
+            in srgb,
+            var(--pipeline-context-accent) 20%,
+            transparent
+        );
+}}
+.st-key-operational-detail-viewer-selected {{
+    border: 0 !important;
+    box-shadow: none !important;
+}}
+[class*="st-key-pipeline-stage-card-"]
+[class*="st-key-pipeline-stage-"] button p {{
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1.1;
+}}
+.st-key-pipeline-stage-card-ci .stMarkdownBadge,
+.st-key-pipeline-stage-card-ci-selected .stMarkdownBadge {{
+    padding-inline: 0.25rem !important;
+    font-size: 0.7rem !important;
+}}
+.st-key-delivery-pipeline-grid
+> [data-testid="stLayoutWrapper"]
+> [data-testid="stHorizontalBlock"]
+> [data-testid="stColumn"]:nth-child(even)
+> [data-testid="stVerticalBlock"] {{
+    height: 300px;
+    justify-content: center;
+}}
+.st-key-delivery-pipeline-grid
+> [data-testid="stLayoutWrapper"]
+> [data-testid="stHorizontalBlock"]
+> [data-testid="stColumn"]:nth-child(even) p {{
+    margin: 0;
+    color: rgba(128, 128, 128, 0.9);
+    font-size: 1.4rem;
+    line-height: 1;
+    text-align: center;
+    transform: translateY(-0.5rem);
+}}
+</style>
+"""
+    )
 
 
 def render_component_header(title: str, data_source_state: str) -> None:
