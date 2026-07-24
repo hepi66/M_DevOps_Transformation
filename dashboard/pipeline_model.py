@@ -8,7 +8,6 @@ from dashboard.operational_detail_viewer import (
     get_ghcr_stage_data,
 )
 
-
 PipelineSource = Literal["DEMO", "LOCAL", "LIVE"]
 PipelineData = dict[str, str | None]
 PipelineDataProvider = Callable[[dict[str, Any] | None], PipelineData | None]
@@ -29,6 +28,81 @@ class PipelineStage:
     details: str | None = None
     detail_view: str | None = None
     data_provider: PipelineDataProvider | None = None
+
+
+def get_ci_pipeline_stage_data(
+    runtime_snapshot: dict[str, Any] | None = None,
+) -> PipelineData:
+    """Project the existing normalized workflow into the CI pipeline stage."""
+    if runtime_snapshot is None:
+        return {
+            "source_classification": "DEMO",
+            "status": "Demo",
+            "timestamp": None,
+            "details": "Demonstration data",
+        }
+
+    github_actions = runtime_snapshot.get("github_actions")
+    if not isinstance(github_actions, dict):
+        return {
+            "source_classification": "LIVE",
+            "status": "Unavailable",
+            "timestamp": None,
+            "details": runtime_snapshot.get("reason") or "Workflow data unavailable",
+        }
+
+    workflow = github_actions.get("workflow")
+    if (
+        github_actions.get("availability") != "available"
+        or not isinstance(workflow, dict)
+    ):
+        return {
+            "source_classification": "LIVE",
+            "status": "Unavailable",
+            "timestamp": None,
+            "details": github_actions.get("reason") or "Workflow data unavailable",
+        }
+
+    raw_status = str(workflow.get("status") or "").lower()
+    conclusion = str(workflow.get("conclusion") or "").lower()
+    waiting_states = {"expected", "pending", "queued", "requested", "waiting"}
+    failure_states = {
+        "action_required",
+        "failure",
+        "startup_failure",
+        "timed_out",
+    }
+
+    if raw_status in waiting_states:
+        status = "Queued"
+    elif raw_status == "in_progress":
+        status = "Running"
+    elif conclusion == "success":
+        status = "Success"
+    elif conclusion in failure_states:
+        status = "Failed"
+    elif conclusion == "cancelled":
+        status = "Cancelled"
+    else:
+        status = "Unavailable"
+
+    run_number = workflow.get("number")
+    branch = workflow.get("headBranch")
+    context = [
+        f"Run #{run_number}" if run_number is not None else None,
+        str(branch) if branch else None,
+    ]
+
+    return {
+        "source_classification": "LIVE",
+        "status": status,
+        "timestamp": (
+            workflow.get("updatedAt")
+            or workflow.get("startedAt")
+            or workflow.get("createdAt")
+        ),
+        "details": " · ".join(value for value in context if value) or None,
+    }
 
 
 PIPELINE_STAGES = (
@@ -58,6 +132,7 @@ PIPELINE_STAGES = (
         source_classification="LIVE",
         status="Completed",
         description="Automated quality gates validate the change.",
+        data_provider=get_ci_pipeline_stage_data,
     ),
     PipelineStage(
         identifier="build",
@@ -115,7 +190,7 @@ def get_pipeline_stages(
 
         try:
             provider_data = stage.data_provider(runtime_snapshot)
-        except Exception:  # Keep the static stage available if retrieval fails.
+        except Exception:  # noqa: BLE001 - provider fallback handles all failures
             provider_data = None
 
         if not provider_data:

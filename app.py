@@ -1,5 +1,6 @@
-import streamlit as st
 import time
+
+import streamlit as st
 
 st.set_page_config(
     page_title="M-DevOps Transformation",
