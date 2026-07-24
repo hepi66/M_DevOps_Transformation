@@ -2,28 +2,26 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 
+from dashboard import navigation, overview_cards, pipeline
 from dashboard import operational_detail_viewer as viewer
-from dashboard import overview_cards
-from dashboard import pipeline
-from dashboard import navigation
 from dashboard.layout import (
     OPERATIONAL_SOURCE_LEGEND,
     PIPELINE_CONTEXT_ACCENT,
 )
-from dashboard.pipeline_model import PIPELINE_STAGES, get_pipeline_stages
 from dashboard.operational_events import (
     OperationalEvent,
     order_operational_events,
 )
 from dashboard.pipeline_context import (
-    PIPELINE_STAGE_FILTERS,
     PIPELINE_STAGE_CONTEXT_COLORS,
+    PIPELINE_STAGE_FILTERS,
     event_pipeline_stage,
     filter_events_for_stage,
     pipeline_source_context_color,
     pipeline_stage_context_color,
     selected_pipeline_stage,
 )
+from dashboard.pipeline_model import PIPELINE_STAGES, get_pipeline_stages
 
 
 def _docker_snapshot(
@@ -225,8 +223,7 @@ def test_successful_ghcr_retrieval_normalizes_available_metadata(monkeypatch):
         (
             (
                 "api",
-                "/users/example/packages/container/"
-                "m_devops_transformation/versions?per_page=1",
+                "/users/example/packages/container/m_devops_transformation/versions?per_page=1",
             ),
             {},
         ),
