@@ -352,7 +352,7 @@ def _render_event_timeline(
     column-gap: 0.35rem;
     min-height: 34px;
     border-bottom: 1px solid rgba(128, 128, 128, 0.14);
-    font-size: 0.82rem;
+    font-size: 0.875rem;
 }
 .operational-event-timeline .event-row:last-child {
     border-bottom: 0;
@@ -363,7 +363,7 @@ def _render_event_timeline(
 }
 .operational-event-timeline .event-row.metadata {
     min-height: 28px;
-    font-size: 0.76rem;
+    font-size: 0.875rem;
     opacity: 0.72;
 }
 .operational-event-timeline .event-time {
@@ -1828,7 +1828,11 @@ def render_operational_detail_viewer(
     )
     with st.container(key=viewer_key):
         data_source_state = "LOCAL" if selected_source == "Code" else "LIVE"
-        render_component_header("Operational Detail Viewer", data_source_state)
+        render_component_header(
+            "Operational Detail Viewer",
+            data_source_state,
+            key="dashboard-component-header-operational-detail-viewer",
+        )
         source = st.selectbox(
             "Source",
             PIPELINE_STAGE_FILTERS,

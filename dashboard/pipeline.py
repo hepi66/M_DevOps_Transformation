@@ -121,7 +121,6 @@ def _render_transition(index: int) -> None:
 def render_delivery_pipeline(runtime_snapshot: dict | None = None) -> None:
     """Render the delivery pipeline from the centralized stage model."""
     st.subheader("Delivery Pipeline")
-    st.caption("Phase 1 demonstration data")
     pipeline_stages = get_pipeline_stages(runtime_snapshot)
 
     selected_stage = selected_pipeline_stage(st.session_state)
