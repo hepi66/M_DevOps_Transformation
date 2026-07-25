@@ -16,7 +16,40 @@ DATA_SOURCE_STATES = {
     "LOCAL": "💻 LOCAL",
     "LIVE": "📡 LIVE",
 }
+SEMANTIC_STATUS_COLORS = {
+    "success": "#22C55E",
+    "active": "#3B82F6",
+    "validation": "#EAB308",
+}
+STATUS_PRESENTATION = {
+    "healthy": {
+        "label": "Healthy",
+        "semantic": "success",
+        "symbol": "✓",
+        "color": SEMANTIC_STATUS_COLORS["success"],
+    },
+    "deploying": {
+        "label": "Deploying",
+        "semantic": "active",
+        "symbol": "▶",
+        "color": SEMANTIC_STATUS_COLORS["active"],
+    },
+    "testing": {
+        "label": "Testing",
+        "semantic": "validation",
+        "symbol": "◷",
+        "color": SEMANTIC_STATUS_COLORS["validation"],
+    },
+}
 PIPELINE_CONTEXT_ACCENT = PIPELINE_STAGE_CONTEXT_COLORS["ci"]
+
+
+def status_presentation(status: str) -> dict[str, str]:
+    """Return the centralized presentation for a supported dashboard status."""
+    normalized_status = status.strip().lower()
+    if normalized_status not in STATUS_PRESENTATION:
+        raise ValueError(f"Unsupported dashboard status: {status}")
+    return STATUS_PRESENTATION[normalized_status]
 
 
 def _resolve_build_information() -> str:
@@ -94,9 +127,12 @@ def render_dashboard_styles() -> None:
 }}
 [class*="st-key-pipeline-stage-card-"]
 [class*="st-key-pipeline-stage-"] button p {{
-    font-size: 1.65rem;
+    font-size: 1.25rem;
     font-weight: 700;
     line-height: 1.1;
+}}
+.stHeading h3 {{
+    font-size: 1.5rem;
 }}
 .st-key-pipeline-stage-card-ci .stMarkdownBadge,
 .st-key-pipeline-stage-card-ci-selected .stMarkdownBadge {{
@@ -127,9 +163,15 @@ def render_dashboard_styles() -> None:
     )
 
 
-def render_component_header(title: str, data_source_state: str) -> None:
+def render_component_header(
+    title: str,
+    data_source_state: str,
+    *,
+    key: str | None = None,
+) -> None:
     """Render a component title with its compact data-origin indicator."""
     header = st.container(
+        key=key,
         horizontal=True,
         horizontal_alignment="distribute",
         vertical_alignment="center",

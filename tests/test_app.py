@@ -2,11 +2,14 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 
-from dashboard import navigation, overview_cards, pipeline
+from dashboard import deployments, environments, navigation, overview_cards, pipeline
 from dashboard import operational_detail_viewer as viewer
 from dashboard.layout import (
     OPERATIONAL_SOURCE_LEGEND,
     PIPELINE_CONTEXT_ACCENT,
+    SEMANTIC_STATUS_COLORS,
+    STATUS_PRESENTATION,
+    status_presentation,
 )
 from dashboard.operational_events import (
     OperationalEvent,
@@ -22,6 +25,168 @@ from dashboard.pipeline_context import (
     selected_pipeline_stage,
 )
 from dashboard.pipeline_model import PIPELINE_STAGES, get_pipeline_stages
+
+
+def test_deployments_render_as_one_compact_table(monkeypatch):
+    html_output = Mock()
+    component_header = Mock()
+    monkeypatch.setattr(deployments.st, "html", html_output)
+    monkeypatch.setattr(deployments.st, "caption", Mock())
+    monkeypatch.setattr(deployments, "render_component_header", component_header)
+
+    deployments.render_deployments()
+
+    rendered = html_output.call_args.args[0]
+    assert rendered.count('<table class="deployment-overview"') == 1
+    assert all(
+        f'<th scope="col">{label}</th>' in rendered
+        for label in ("Environment", "Status", "Version", "Age")
+    )
+    positions = [
+        rendered.index(deployment["environment"])
+        for deployment in deployments.DEPLOYMENTS
+    ]
+    assert positions == sorted(positions)
+    assert rendered.count('class="deployment-environment"') == len(
+        deployments.DEPLOYMENTS
+    )
+    assert rendered.count("<td>—</td>") == len(deployments.DEPLOYMENTS) + 1
+    for deployment in deployments.DEPLOYMENTS:
+        presentation = status_presentation(deployment["status"])
+        assert presentation["label"] in rendered
+        assert presentation["symbol"] in rendered
+    component_header.assert_called_once_with(
+        "Deployments",
+        "DEMO",
+        key="dashboard-component-header-deployments",
+    )
+
+
+def test_deployment_demo_data_includes_preview_in_required_order():
+    assert deployments.DEPLOYMENTS == (
+        {
+            "environment": "production",
+            "status": "Healthy",
+            "version": "v1.24.7",
+        },
+        {
+            "environment": "staging",
+            "status": "Deploying",
+            "version": "v1.24.8",
+        },
+        {
+            "environment": "development",
+            "status": "Testing",
+            "version": "v1.24.9",
+        },
+        {
+            "environment": "preview",
+            "status": "Deploying",
+            "version": "—",
+        },
+    )
+
+
+def test_deployment_status_vocabulary_covers_current_demo_data():
+    current_statuses = {
+        deployment["status"].lower()
+        for deployment in deployments.DEPLOYMENTS
+    }
+    assert current_statuses == set(STATUS_PRESENTATION)
+    for status in current_statuses:
+        presentation = status_presentation(status)
+        assert presentation["label"]
+        assert presentation["symbol"]
+        assert presentation["semantic"] in SEMANTIC_STATUS_COLORS
+        assert (
+            presentation["color"]
+            == SEMANTIC_STATUS_COLORS[presentation["semantic"]]
+        )
+
+
+def test_deployment_status_vocabulary_uses_no_pipeline_context_colors():
+    deployment_colors = {
+        presentation["color"]
+        for presentation in STATUS_PRESENTATION.values()
+    }
+    assert deployment_colors.isdisjoint(
+        PIPELINE_STAGE_CONTEXT_COLORS.values()
+    )
+
+
+def test_unknown_dashboard_status_is_rejected():
+    with pytest.raises(ValueError, match="Unsupported dashboard status"):
+        status_presentation("invented")
+
+
+def test_environment_statuses_reuse_centralized_presentation():
+    assert status_presentation("Healthy") is STATUS_PRESENTATION["healthy"]
+    assert status_presentation("Deploying") is STATUS_PRESENTATION["deploying"]
+    assert not hasattr(environments, "ENVIRONMENT_STATUS_PRESENTATION")
+
+
+def test_environments_render_as_one_compact_runtime_table(monkeypatch):
+    html_output = Mock()
+    component_header = Mock()
+    monkeypatch.setattr(environments.st, "html", html_output)
+    monkeypatch.setattr(environments.st, "caption", Mock())
+    monkeypatch.setattr(environments, "render_component_header", component_header)
+
+    environments.render_environments()
+
+    rendered = html_output.call_args.args[0]
+    assert rendered.count('<table class="environment-overview"') == 1
+    assert all(
+        f'<th scope="col">{label}</th>' in rendered
+        for label in ("Environment", "Health", "Pods", "State")
+    )
+    positions = [
+        rendered.index(environment["environment"])
+        for environment in environments.ENVIRONMENTS
+    ]
+    assert positions == sorted(positions)
+    assert rendered.count('class="environment-name"') == len(
+        environments.ENVIRONMENTS
+    )
+    for environment in environments.ENVIRONMENTS:
+        assert f"<td>{environment['pods']}</td>" in rendered
+    healthy = status_presentation("Healthy")
+    deploying = status_presentation("Deploying")
+    assert rendered.count(
+        f'class="environment-health"><span '
+        f'class="environment-status-symbol" aria-hidden="true" '
+        f'style="color: {healthy["color"]}">{healthy["symbol"]}</span> '
+        f'{healthy["label"]}</td>'
+    ) == 3
+    assert (
+        f'class="environment-state"><span '
+        f'class="environment-status-symbol" aria-hidden="true" '
+        f'style="color: {deploying["color"]}">{deploying["symbol"]}</span> '
+        f'{deploying["label"]}</td>'
+    ) in rendered
+    preview_row = rendered.split(
+        '<td class="environment-name">preview</td>',
+        maxsplit=1,
+    )[1].split("</tr>", maxsplit=1)[0]
+    assert (
+        '<td class="environment-health">'
+        '<span class="environment-neutral">—</span></td>'
+    ) in preview_row
+    assert deploying["label"] in preview_row
+    assert rendered.count('class="environment-neutral"') == 4
+    assert (
+        '<span class="environment-neutral environment-status-symbol"'
+        not in rendered
+    )
+    assert all(
+        color not in rendered
+        for color in PIPELINE_STAGE_CONTEXT_COLORS.values()
+    )
+    component_header.assert_called_once_with(
+        "Environments",
+        "DEMO",
+        key="dashboard-component-header-environments",
+    )
 
 
 def _docker_snapshot(
@@ -354,7 +519,7 @@ def test_ghcr_operational_fallback_events(availability, expected_message):
     assert events[0].status == "WARNING"
 
 
-def test_ghcr_images_card_renders_live_metadata(monkeypatch):
+def test_ghcr_images_card_renders_neutral_placeholder(monkeypatch):
     container = MagicMock()
     container.__enter__.return_value = container
     monkeypatch.setattr(
@@ -363,11 +528,13 @@ def test_ghcr_images_card_renders_live_metadata(monkeypatch):
         Mock(return_value=container),
     )
     monkeypatch.setattr(overview_cards, "render_component_header", Mock())
-    monkeypatch.setattr(
-        overview_cards,
-        "get_ghcr_data",
-        Mock(
-            return_value={
+    monkeypatch.setattr(overview_cards.st, "caption", Mock())
+    monkeypatch.setattr(overview_cards.st, "markdown", Mock())
+    monkeypatch.setattr(overview_cards.st, "link_button", Mock())
+
+    overview_cards._render_ghcr_card(
+        {
+            "ghcr": {
                 "availability": "available",
                 "image_name": "ghcr.io/example/image",
                 "latest_tag": "latest",
@@ -376,26 +543,18 @@ def test_ghcr_images_card_renders_live_metadata(monkeypatch):
                 "visibility": "public",
                 "package_url": "https://github.com/example/package",
             }
-        ),
+        }
     )
-    monkeypatch.setattr(overview_cards.st, "markdown", Mock())
-    monkeypatch.setattr(overview_cards.st, "caption", Mock())
-    monkeypatch.setattr(overview_cards.st, "link_button", Mock())
-
-    overview_cards._render_ghcr_card()
 
     overview_cards.render_component_header.assert_called_once_with(
         "Images (GHCR)",
         "LIVE",
     )
-    overview_cards.st.markdown.assert_called_once_with(
-        "**ghcr.io/example/image:latest**"
+    overview_cards.st.caption.assert_called_once_with(
+        "Awaiting image statistics"
     )
-    overview_cards.st.link_button.assert_called_once_with(
-        "Open GHCR Package",
-        "https://github.com/example/package",
-    )
-    overview_cards.get_ghcr_data.assert_called_once_with(None)
+    overview_cards.st.markdown.assert_not_called()
+    overview_cards.st.link_button.assert_not_called()
 
 
 def test_runtime_snapshot_is_reused_by_live_consumers(monkeypatch):

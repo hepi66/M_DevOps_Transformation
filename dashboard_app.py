@@ -40,16 +40,17 @@ if selected_page == "overview":
     with st.container(border=True):
         render_delivery_pipeline(runtime_snapshot)
 
-    deployments_column, environments_column, logs_column = st.columns(
-        3,
+    overview_column, logs_column = st.columns(
+        [1, 2],
         gap="medium",
     )
 
-    with deployments_column, st.container(border=True, height="stretch"):
-        render_deployments()
+    with overview_column:
+        with st.container(border=True, height="stretch"):
+            render_deployments()
 
-    with environments_column, st.container(border=True, height="stretch"):
-        render_environments()
+        with st.container(border=True, height="stretch"):
+            render_environments()
 
     with logs_column, st.container(
         border=True,
