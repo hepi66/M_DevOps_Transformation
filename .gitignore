@@ -5,6 +5,9 @@ venv/
 # Sicherheit: Lokale Umgebungsvariablen (API-Keys) NIEMALS hochladen
 .env
 
+# Sicherheit: Lokale Kubernetes-Zugangsdaten bleiben außerhalb des Repositorys
+/k8s/base/k3s.yml
+
 # Python-Laufzeit-Cache ignorieren
 **/__pycache__/
 *.pyc

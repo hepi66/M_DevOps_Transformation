@@ -55,10 +55,12 @@ The Docker image becomes the artifact that is deployed throughout the platform.
 ## Application Source
 
 ```text id="a4v6mx"
-app.py
+dashboard_app.py
 ```
 
-Contains application logic.
+This is the portfolio-facing M-DevOps Dashboard entry point used by the
+container image. The independent lifecycle demonstrator remains available as
+`app.py`, but it is not the deployed workload.
 
 ---
 
@@ -156,6 +158,9 @@ Start the image:
 ```powershell id="d9bl7m"
 docker run -p 8501:8501 m-devops-transformation
 ```
+
+The container starts Streamlit in headless mode, listens on `0.0.0.0`, and
+serves the dashboard on port `8501`.
 
 Explanation:
 

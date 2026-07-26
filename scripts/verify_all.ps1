@@ -15,7 +15,8 @@ $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $checks = @(
     "verify_cluster.ps1",
     "verify_pods.ps1",
-    "verify_gitops.ps1"
+    "verify_gitops.ps1",
+    "verify_dashboard.ps1"
 )
 
 foreach ($check in $checks) {

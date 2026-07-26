@@ -10,6 +10,112 @@ This guide builds upon the GitOps and ArgoCD Guide.
 
 ---
 
+# M-DevOps Dashboard Deployment Contract
+
+The portfolio-facing workload deploys `dashboard_app.py` from:
+
+```text
+ghcr.io/hepi66/m_devops_transformation:latest
+```
+
+The CI workflow also publishes an immutable full commit-SHA tag for every
+image. `latest` is present only in the initial GitOps bootstrap manifest
+because the existing immutable images predate the dashboard container
+entry-point change. After the first dashboard image is published, release
+promotion should update the workload to the verified commit-SHA tag before the
+first synchronization. Do not synchronize the child Application while it
+still references the pre-dashboard `latest` image. No automated image updater
+is part of this increment.
+
+The package is public, so the current workload needs no image-pull Secret.
+Never commit GHCR credentials, GitHub tokens, kubeconfig data, or Argo CD
+credentials. If package visibility changes, create an out-of-repository
+Kubernetes image-pull Secret and reference it from the Pod specification.
+
+## Repository Resources
+
+```text
+k8s/
+├── apps/
+│   ├── root-app.yml
+│   └── m-devops-dashboard.yaml
+└── workloads/
+    └── m-devops-dashboard/
+        ├── namespace.yaml
+        ├── deployment.yaml
+        ├── service.yaml
+        └── kustomization.yaml
+```
+
+The workload uses:
+
+- Namespace `m-devops-dashboard`
+- One replica with a rolling update strategy
+- ClusterIP Service `m-devops-dashboard` on port `8501`
+- Conservative CPU and memory requests and limits for a small demonstration
+  workload
+- Streamlit `/_stcore/health` readiness and liveness checks
+
+Readiness starts after 10 seconds and checks every 10 seconds so traffic is
+sent only when Streamlit is ready. Liveness starts after 30 seconds and checks
+every 20 seconds to avoid restart loops during normal startup.
+
+## Argo CD Management
+
+`k8s/apps/root-app.yml` discovers the child Application
+`k8s/apps/m-devops-dashboard.yaml` from the `main` branch. The child
+Application renders the Kustomize workload path and targets the
+`m-devops-dashboard` namespace.
+
+The root Application remains automated and discovers the child Application.
+The child Application intentionally uses manual synchronization for the
+bootstrap. This prevents Argo CD from deploying the previous `latest` image
+before CI has published the dashboard container. After the workload is pinned
+to the new immutable commit-SHA tag, synchronize it explicitly. Automated
+pruning and self-healing can then be enabled in a separate, reviewable change.
+`CreateNamespace=true` permits initial namespace creation; the Namespace
+manifest also keeps namespace labels under GitOps control.
+
+## Static Validation
+
+From the repository root:
+
+```powershell
+kubectl kustomize k8s/workloads/m-devops-dashboard
+kubectl apply --dry-run=client -k k8s/workloads/m-devops-dashboard
+kubectl apply --dry-run=client -f k8s/apps/m-devops-dashboard.yaml
+```
+
+## Runtime Verification
+
+After the repository change is available on `main` and CI has published the
+dashboard image:
+
+```powershell
+kubectl config current-context
+kubectl get application m-devops-dashboard -n argocd
+kubectl patch application m-devops-dashboard -n argocd --type merge -p '{"operation":{"sync":{}}}'
+kubectl get deployment,replicaset,pods,service -n m-devops-dashboard
+.\scripts\verify_dashboard.ps1
+kubectl port-forward service/m-devops-dashboard 8501:8501 -n m-devops-dashboard
+```
+
+In a second terminal:
+
+```powershell
+Invoke-WebRequest http://127.0.0.1:8501/_stcore/health
+```
+
+The expected health response has HTTP status `200`. Stop port-forwarding with
+`Ctrl+C` after verification.
+
+The dashboard can start without GitHub or GHCR credentials. Providers that
+cannot authenticate retain their established unavailable or demonstration
+behavior. Live Argo CD and Kubernetes dashboard providers remain outside this
+deployment increment.
+
+---
+
 # What is Kubernetes?
 
 Kubernetes is a container orchestration platform.
