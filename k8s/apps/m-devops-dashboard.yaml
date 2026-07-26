@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: m-devops-dashboard
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/hepi66/M_DevOps_Transformation.git
+    targetRevision: main
+    path: k8s/workloads/m-devops-dashboard
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: m-devops-dashboard
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

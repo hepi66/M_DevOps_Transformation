@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: m-devops-dashboard
+  namespace: m-devops-dashboard
+  labels:
+    app.kubernetes.io/name: m-devops-dashboard
+    app.kubernetes.io/instance: m-devops-dashboard
+    app.kubernetes.io/part-of: m-devops-transformation
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: m-devops-dashboard
+      app.kubernetes.io/instance: m-devops-dashboard
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: m-devops-dashboard
+        app.kubernetes.io/instance: m-devops-dashboard
+        app.kubernetes.io/part-of: m-devops-transformation
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: dashboard
+          image: ghcr.io/hepi66/m_devops_transformation:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8501
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

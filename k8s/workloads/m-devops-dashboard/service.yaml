@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: m-devops-dashboard
+  namespace: m-devops-dashboard
+  labels:
+    app.kubernetes.io/name: m-devops-dashboard
+    app.kubernetes.io/instance: m-devops-dashboard
+    app.kubernetes.io/part-of: m-devops-transformation
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: m-devops-dashboard
+    app.kubernetes.io/instance: m-devops-dashboard
+  ports:
+    - name: http
+      port: 8501
+      targetPort: http
+      protocol: TCP

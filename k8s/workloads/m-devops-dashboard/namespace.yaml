@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: m-devops-dashboard
+  labels:
+    app.kubernetes.io/name: m-devops-dashboard
+    app.kubernetes.io/part-of: m-devops-transformation
