@@ -15,17 +15,13 @@ This guide builds upon the GitOps and ArgoCD Guide.
 The portfolio-facing workload deploys `dashboard_app.py` from:
 
 ```text
-ghcr.io/hepi66/m_devops_transformation:latest
+ghcr.io/hepi66/m_devops_transformation:9715faa3d0fc7c7a545ffaec5817adbac0592e91
 ```
 
-The CI workflow also publishes an immutable full commit-SHA tag for every
-image. `latest` is present only in the initial GitOps bootstrap manifest
-because the existing immutable images predate the dashboard container
-entry-point change. After the first dashboard image is published, release
-promotion should update the workload to the verified commit-SHA tag before the
-first synchronization. Do not synchronize the child Application while it
-still references the pre-dashboard `latest` image. No automated image updater
-is part of this increment.
+The CI workflow publishes an immutable full commit-SHA tag for every image.
+The workload is pinned to the verified dashboard image instead of relying on
+the mutable `latest` tag. No automated image updater is part of this
+increment.
 
 The package is public, so the current workload needs no image-pull Secret.
 Never commit GHCR credentials, GitHub tokens, kubeconfig data, or Argo CD
@@ -113,6 +109,34 @@ The dashboard can start without GitHub or GHCR credentials. Providers that
 cannot authenticate retain their established unavailable or demonstration
 behavior. Live Argo CD and Kubernetes dashboard providers remain outside this
 deployment increment.
+
+## Verified Initial Deployment
+
+The initial GitOps deployment was verified on 27 July 2026 against the local
+Docker Desktop Kubernetes cluster:
+
+- Kubernetes context: `docker-desktop`
+- Argo CD Applications: `root-app` and `m-devops-dashboard` both `Synced` and
+  `Healthy`
+- Deployment: one desired and one available replica
+- Pod: `Running`, ready, with zero restarts
+- Service: `m-devops-dashboard` (`ClusterIP`) with a ready endpoint on port
+  `8501`
+- Pulled image digest:
+  `sha256:1e389cd00eb2ebe995493e73c51fce904d124b2bfe70752722dd9c8b4f28a4dd`
+- Streamlit health endpoint: HTTP `200` with response `ok`
+- Browser verification: the deployed application rendered
+  `M-DevOps Dashboard` without browser-console warnings or errors
+
+The complete repository verification can be repeated with:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\scripts\verify_all.ps1
+```
+
+The execution-policy change is limited to the current PowerShell process.
+The child Application intentionally retains manual synchronization.
 
 ---
 
