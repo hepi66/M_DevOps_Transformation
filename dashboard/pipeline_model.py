@@ -3,6 +3,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, Literal
 
+from dashboard.lifecycle import PipelineRun
 from dashboard.operational_detail_viewer import (
     get_docker_build_stage_data,
     get_ghcr_stage_data,
@@ -178,9 +179,42 @@ PIPELINE_STAGES = (
 
 
 def get_pipeline_stages(
-    runtime_snapshot: dict[str, Any] | None = None,
+    runtime_snapshot: dict[str, Any] | PipelineRun | None = None,
 ) -> tuple[PipelineStage, ...]:
     """Return pipeline stages with available provider data applied."""
+    if isinstance(runtime_snapshot, PipelineRun):
+        lifecycle_stages = {
+            stage.identifier: stage
+            for stage in runtime_snapshot.stages
+        }
+        return tuple(
+            replace(
+                stage,
+                source_classification=(
+                    lifecycle_stages[stage.identifier].source_classification
+                    if stage.identifier in lifecycle_stages
+                    else stage.source_classification
+                ),
+                status=(
+                    lifecycle_stages[stage.identifier].status
+                    if stage.identifier in lifecycle_stages
+                    else stage.status
+                ),
+                timestamp=(
+                    lifecycle_stages[stage.identifier].timestamp
+                    if stage.identifier in lifecycle_stages
+                    else stage.timestamp
+                ),
+                details=(
+                    lifecycle_stages[stage.identifier].details
+                    if stage.identifier in lifecycle_stages
+                    and lifecycle_stages[stage.identifier].details
+                    else stage.details
+                ),
+            )
+            for stage in PIPELINE_STAGES
+        )
+
     resolved_stages = []
 
     for stage in PIPELINE_STAGES:

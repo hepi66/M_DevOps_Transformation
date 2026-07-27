@@ -2,6 +2,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from dashboard.lifecycle import PipelineRun
 from dashboard.pipeline_context import selected_pipeline_stage
 from dashboard.pipeline_model import PipelineStage, get_pipeline_stages
 
@@ -118,7 +119,9 @@ def _render_transition(index: int) -> None:
     st.markdown("→")
 
 
-def render_delivery_pipeline(runtime_snapshot: dict | None = None) -> None:
+def render_delivery_pipeline(
+    runtime_snapshot: dict | PipelineRun | None = None,
+) -> None:
     """Render the delivery pipeline from the centralized stage model."""
     st.subheader("Delivery Pipeline")
     pipeline_stages = get_pipeline_stages(runtime_snapshot)

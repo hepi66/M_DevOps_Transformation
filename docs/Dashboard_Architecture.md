@@ -22,7 +22,7 @@ The demonstrator must remain fully functional and isolated. It must not be renam
 
 ### DevOps Dashboard
 
-`dashboard_app.py` is the future entry point of the DevOps Dashboard. The dashboard will use a dedicated modular dashboard package that is separate from the lifecycle demonstrator.
+`dashboard_app.py` is the entry point of the DevOps Dashboard. The dashboard uses a dedicated modular dashboard package that is separate from the lifecycle demonstrator.
 
 The dashboard package will own dashboard presentation, navigation, styling, reusable UI elements, and dashboard data responsibilities introduced within the approved phase scope.
 
@@ -31,6 +31,62 @@ The dashboard package will own dashboard presentation, navigation, styling, reus
 The lifecycle demonstrator and the dashboard may share repository-level tooling, dependencies, continuous integration, and delivery infrastructure. They must not share runtime responsibilities.
 
 Each application must remain independently runnable and independently verifiable. Future dashboard data providers must remain independent from the lifecycle demonstrator.
+
+## Live Data Lifecycle Foundation
+
+One Streamlit rerun creates one authoritative cached runtime snapshot. The
+dashboard lifecycle aggregation service normalizes that snapshot and produces
+exactly one immutable `PipelineRun` observation for downstream pipeline
+consumers.
+
+```text
+Existing provider retrieval
+        ↓
+Authoritative runtime snapshot
+        ↓
+Provider normalization
+        ↓
+Identifier correlation
+        ↓
+PipelineRun
+        ↓
+Deterministic pipeline-stage mapping
+```
+
+`PipelineRun` records the delivery identifiers and state shared across
+providers: commit SHA, workflow run ID, branch, workflow state, image
+coordinates, deployment revision and namespace, Pod observations, lifecycle
+timestamps, duration, and refresh metadata. The model also retains normalized
+GitHub, GHCR, Argo CD, and Kubernetes observations without exposing their raw
+provider dictionaries to pipeline presentation code.
+
+The current retrieval layer populates GitHub, GitHub Actions, Docker Build,
+and GHCR data. Argo CD and Kubernetes normalization is available as a stable
+boundary, but remains `unknown` until live dashboard providers supply those
+observations. Static Argo CD and Kubernetes pipeline presentation therefore
+remains unchanged.
+
+### Correlation Strategy
+
+Correlation is evidence-based:
+
+1. Commit SHA is the primary lifecycle identity.
+2. Workflow run ID identifies the observed CI execution.
+3. An image tag may connect GHCR to the commit only when it equals the full
+   commit SHA or an unambiguous SHA prefix.
+4. Deployment and runtime observations are attached only when their revisions
+   or image tags match already-correlated identifiers.
+
+Missing or conflicting identifiers produce an `unknown` or `partial`
+correlation result. The aggregator never guesses a relationship from timing,
+names, or ordering alone.
+
+### Refresh Foundation
+
+The lifecycle model contains the last refresh time, refresh status, configured
+refresh interval, and calculated next refresh time. These values describe the
+current retrieval observation only. No timer, polling, countdown, fragment
+refresh, or background refresh behavior is implemented.
 
 ## Incremental Architecture Principles
 
@@ -78,18 +134,18 @@ Phase 1 excludes:
 - Credentials
 - Network clients
 - Production control functions
-- Live GitHub integration
-- Live GitHub Actions integration
-- Live GHCR integration
 - Live Argo CD integration
 - Live Kubernetes integration
 - Live DORA data integration
+- Automatic or background refresh
 
 Later-phase technologies may appear during Phase 1 as realistic demonstration data without becoming runtime dependencies.
 
 ## Future Evolution
 
-Live providers may be introduced in later phases behind dashboard-owned boundaries. They must remain independent from the lifecycle demonstrator and must not change the demonstrator into a dashboard dependency.
+Additional live providers may be introduced behind the normalized lifecycle
+boundary. They must remain independent from the lifecycle demonstrator and
+must not change the demonstrator into a dashboard dependency.
 
 Models, utilities, charts, integrations, and other abstractions should evolve only in response to implemented and verifiable needs.
 

@@ -7,6 +7,7 @@ from dashboard.layout import (
     render_dashboard_styles,
     render_page_header,
 )
+from dashboard.lifecycle import aggregate_pipeline_run
 from dashboard.navigation import render_navigation
 from dashboard.operational_detail_viewer import (
     clear_dashboard_snapshot,
@@ -28,6 +29,7 @@ selected_page = render_navigation(clear_dashboard_snapshot)
 if selected_page == "overview":
     with st.spinner("Loading dashboard data..."):
         runtime_snapshot = load_dashboard_snapshot()
+        pipeline_run = aggregate_pipeline_run(runtime_snapshot)
 
     render_page_header(
         "M-DevOps Dashboard",
@@ -38,7 +40,7 @@ if selected_page == "overview":
     render_summary_cards()
 
     with st.container(border=True):
-        render_delivery_pipeline(runtime_snapshot)
+        render_delivery_pipeline(pipeline_run)
 
     overview_column, logs_column = st.columns(
         [1, 2],
