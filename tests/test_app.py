@@ -371,6 +371,7 @@ def test_successful_ghcr_retrieval_normalizes_available_metadata(monkeypatch):
         "availability": "available",
         "package_name": "m_devops_transformation",
         "image_name": "ghcr.io/example/m_devops_transformation",
+        "tags": ["latest", "1234567"],
         "latest_tag": "latest",
         "published_at": "2026-07-22T08:56:00Z",
         "digest": "sha256:abc123",

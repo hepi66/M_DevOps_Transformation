@@ -654,6 +654,7 @@ def _load_ghcr_package(repository: dict[str, Any]) -> dict[str, Any]:
         "availability": "available",
         "package_name": package.get("name") or package_name,
         "image_name": f"ghcr.io/{owner}/{package_name}",
+        "tags": tags,
         "latest_tag": latest_tag,
         "published_at": version.get("updated_at") or version.get("created_at"),
         "digest": version.get("name"),
