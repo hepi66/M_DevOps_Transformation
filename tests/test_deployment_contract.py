@@ -32,7 +32,7 @@ def test_kustomization_contains_dashboard_workload_resources():
 def test_deployment_uses_ci_image_and_runtime_contract():
     deployment = _read(WORKLOAD_ROOT / "deployment.yaml")
 
-    assert "ghcr.io/hepi66/m_devops_transformation:latest" in deployment
+    assert "ghcr.io/hepi66/m_devops_transformation:9715faa3d0fc7c7a545ffaec5817adbac0592e91" in deployment
     assert "containerPort: 8501" in deployment
     assert "path: /_stcore/health" in deployment
     assert "readinessProbe:" in deployment
