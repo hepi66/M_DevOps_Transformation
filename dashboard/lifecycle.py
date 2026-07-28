@@ -90,10 +90,12 @@ class ArgoCDProviderData:
     availability: ProviderAvailability
     status: LifecycleStatus
     application: str | None = None
-    revision: str | None = None
+    target_revision: str | None = None
+    observed_revision: str | None = None
     namespace: str | None = None
     sync_status: str | None = None
     health_status: str | None = None
+    operation_phase: str | None = None
     observed_at: datetime | None = None
     workflow_run_id: str | None = None
     reason: str | None = None
@@ -109,6 +111,7 @@ class PodInformation:
     restart_count: int | None = None
     image: str | None = None
     image_digest: str | None = None
+    created_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -119,10 +122,16 @@ class KubernetesProviderData:
     status: LifecycleStatus
     namespace: str | None = None
     deployment: str | None = None
-    revision: str | None = None
+    deployment_revision: str | None = None
     image_tag: str | None = None
+    image_digest: str | None = None
     available_replicas: int | None = None
     desired_replicas: int | None = None
+    updated_replicas: int | None = None
+    ready_replicas: int | None = None
+    observed_generation: int | None = None
+    rollout_status: str | None = None
+    replica_set_revision: str | None = None
     pods: tuple[PodInformation, ...] = ()
     observed_at: datetime | None = None
     workflow_run_id: str | None = None
@@ -355,10 +364,12 @@ def normalize_argocd_provider(snapshot: dict[str, Any]) -> ArgoCDProviderData:
         availability=availability,
         status=status,
         application=raw.get("application"),
-        revision=raw.get("revision"),
+        target_revision=raw.get("target_revision"),
+        observed_revision=raw.get("observed_revision") or raw.get("revision"),
         namespace=raw.get("namespace"),
         sync_status=sync_status,
         health_status=health_status,
+        operation_phase=raw.get("operation_phase"),
         observed_at=parse_provider_timestamp(raw.get("observed_at")),
         workflow_run_id=(
             str(raw["workflow_run_id"])
@@ -389,6 +400,7 @@ def normalize_kubernetes_provider(
             ),
             image=pod.get("image"),
             image_digest=pod.get("image_digest"),
+            created_at=parse_provider_timestamp(pod.get("created_at")),
         )
         for pod in (raw_pods if isinstance(raw_pods, list) else ())
         if isinstance(pod, dict)
@@ -413,10 +425,28 @@ def normalize_kubernetes_provider(
         status=status,
         namespace=raw.get("namespace"),
         deployment=raw.get("deployment"),
-        revision=raw.get("revision"),
+        deployment_revision=raw.get("deployment_revision") or raw.get("revision"),
         image_tag=raw.get("image_tag"),
+        image_digest=raw.get("image_digest"),
         available_replicas=available if isinstance(available, int) else None,
         desired_replicas=desired if isinstance(desired, int) else None,
+        updated_replicas=(
+            raw.get("updated_replicas")
+            if isinstance(raw.get("updated_replicas"), int)
+            else None
+        ),
+        ready_replicas=(
+            raw.get("ready_replicas")
+            if isinstance(raw.get("ready_replicas"), int)
+            else None
+        ),
+        observed_generation=(
+            raw.get("observed_generation")
+            if isinstance(raw.get("observed_generation"), int)
+            else None
+        ),
+        rollout_status=raw.get("rollout_status"),
+        replica_set_revision=raw.get("replica_set_revision"),
         pods=pods,
         observed_at=parse_provider_timestamp(raw.get("observed_at")),
         workflow_run_id=(
@@ -431,11 +461,11 @@ def normalize_kubernetes_provider(
 def _docker_stage(snapshot: dict[str, Any]) -> PipelineStageState:
     raw = snapshot.get("docker_build")
     if not isinstance(raw, dict) or raw.get("availability") != "available":
-        return PipelineStageState("build", "Completed", "LOCAL")
+        return PipelineStageState("build", "Unknown", "LIVE")
     job = raw.get("job")
     step = raw.get("step")
     if not isinstance(job, dict) or not isinstance(step, dict):
-        return PipelineStageState("build", "Completed", "LOCAL")
+        return PipelineStageState("build", "Unknown", "LIVE")
     status = _workflow_status(step.get("status"), step.get("conclusion"))
     if status == "unknown":
         status = _workflow_status(job.get("status"), job.get("conclusion"))
@@ -444,8 +474,8 @@ def _docker_stage(snapshot: dict[str, Any]) -> PipelineStageState:
         "running": "Active",
         "queued": "Active",
         "failed": "Failed",
-        "cancelled": "Completed",
-    }.get(status, "Completed")
+        "cancelled": "Failed",
+    }.get(status, "Unknown")
     return PipelineStageState(
         "build",
         label,
@@ -466,43 +496,73 @@ def _stage_mapping(
     ghcr: GHCRProviderData,
     argocd: ArgoCDProviderData,
     kubernetes: KubernetesProviderData,
+    *,
+    run_detected: bool,
+    github_evidence: bool,
+    image_correlated: bool,
+    deployment_correlated: bool,
+    runtime_correlated: bool,
 ) -> tuple[PipelineStageState, ...]:
-    ci_status = {
-        "completed": "Success",
-        "running": "Running",
-        "queued": "Queued",
-        "failed": "Failed",
-        "cancelled": "Cancelled",
-    }.get(github.status, "Unavailable")
-    ghcr_status = {
-        "available": "Image published",
-        "missing": "Image unavailable",
-        "authentication_unavailable": "Authentication unavailable",
-    }.get(ghcr.availability, "Retrieval unavailable")
+    if not run_detected:
+        return tuple(
+            PipelineStageState(
+                identifier,
+                "Unknown",
+                source,
+            )
+            for identifier, source in (
+                ("code", "LOCAL"),
+                ("github", "LIVE"),
+                ("ci", "LIVE"),
+                ("build", "LIVE"),
+                ("ghcr", "LIVE"),
+                ("argocd", "LIVE"),
+                ("kubernetes", "LIVE"),
+            )
+        )
 
-    argocd_stage = PipelineStageState("argocd", "Active", "DEMO")
-    if argocd.availability == "available":
+    ci_status = (
+        {
+            "completed": "Success",
+            "running": "Running",
+            "queued": "Queued",
+            "failed": "Failed",
+            "cancelled": "Cancelled",
+        }.get(github.status, "Unknown")
+        if github_evidence
+        else "Unknown"
+    )
+    ghcr_status = (
+        "Image published"
+        if image_correlated
+        else "Failed"
+        if ghcr.status == "failed"
+        else "Unknown"
+    )
+
+    argocd_stage = PipelineStageState("argocd", "Unknown", "LIVE")
+    if deployment_correlated:
         argocd_stage = PipelineStageState(
             "argocd",
             {
                 "completed": "Completed",
                 "running": "Active",
                 "failed": "Failed",
-            }.get(argocd.status, "Unavailable"),
+            }.get(argocd.status, "Unknown"),
             "LIVE",
             argocd.observed_at,
             argocd.application,
         )
 
-    kubernetes_stage = PipelineStageState("kubernetes", "Upcoming", "DEMO")
-    if kubernetes.availability == "available":
+    kubernetes_stage = PipelineStageState("kubernetes", "Unknown", "LIVE")
+    if runtime_correlated:
         kubernetes_stage = PipelineStageState(
             "kubernetes",
             {
                 "completed": "Completed",
                 "running": "Active",
                 "failed": "Failed",
-            }.get(kubernetes.status, "Unavailable"),
+            }.get(kubernetes.status, "Unknown"),
             "LIVE",
             kubernetes.observed_at,
             kubernetes.deployment,
@@ -512,7 +572,7 @@ def _stage_mapping(
         PipelineStageState("code", "Completed", "LOCAL"),
         PipelineStageState(
             "github",
-            "Completed",
+            "Completed" if github_evidence else "Unknown",
             "LIVE",
             github.completed_at,
             github.repository,
@@ -547,19 +607,40 @@ def _tag_matches_commit(tag: str, commit_sha: str) -> bool:
     )
 
 
+def _commit_from_image_tag(image_tag: str | None) -> str | None:
+    if not image_tag:
+        return None
+    normalized = image_tag.lower()
+    if len(normalized) < 7 or len(normalized) > 40:
+        return None
+    if any(character not in "0123456789abcdef" for character in normalized):
+        return None
+    return normalized
+
+
 def aggregate_pipeline_run(
     snapshot: dict[str, Any],
     *,
+    argocd_observation: ArgoCDProviderData | None = None,
+    kubernetes_observation: KubernetesProviderData | None = None,
     refresh_interval_seconds: int = 60,
 ) -> PipelineRun:
     """Normalize and correlate one authoritative runtime snapshot."""
     github = normalize_github_provider(snapshot)
     ghcr = normalize_ghcr_provider(snapshot)
-    argocd = normalize_argocd_provider(snapshot)
-    kubernetes = normalize_kubernetes_provider(snapshot)
-    stages = _stage_mapping(snapshot, github, ghcr, argocd, kubernetes)
+    argocd = argocd_observation or normalize_argocd_provider(snapshot)
+    kubernetes = (
+        kubernetes_observation
+        or normalize_kubernetes_provider(snapshot)
+    )
 
-    commit_sha = github.commit_sha
+    commit_sha = github.commit_sha or _commit_from_image_tag(
+        kubernetes.image_tag
+    )
+    run_detected = bool(commit_sha)
+    github_evidence = bool(
+        github.commit_sha and github.workflow_run_id
+    )
     image_correlated = bool(
         commit_sha
         and any(_tag_matches_commit(tag, commit_sha) for tag in ghcr.tags)
@@ -574,25 +655,30 @@ def aggregate_pipeline_run(
     )
     deployment_correlated = bool(
         commit_sha
-        and argocd.revision
+        and argocd.observed_revision
         and (
-            argocd.revision == commit_sha
-            or commit_sha.startswith(argocd.revision)
-            or argocd.revision.startswith(commit_sha)
+            argocd.observed_revision == commit_sha
+            or commit_sha.startswith(argocd.observed_revision)
+            or argocd.observed_revision.startswith(commit_sha)
         )
     )
     runtime_correlated = bool(
         kubernetes.availability == "available"
-        and (
-            (
-                deployment_correlated
-                and kubernetes.revision == argocd.revision
-            )
-            or (
-                image_tag is not None
-                and kubernetes.image_tag == image_tag
-            )
-        )
+        and kubernetes.image_tag
+        and commit_sha
+        and _tag_matches_commit(kubernetes.image_tag, commit_sha)
+    )
+    stages = _stage_mapping(
+        snapshot,
+        github,
+        ghcr,
+        argocd,
+        kubernetes,
+        run_detected=run_detected,
+        github_evidence=github_evidence,
+        image_correlated=image_correlated,
+        deployment_correlated=deployment_correlated,
+        runtime_correlated=runtime_correlated,
     )
 
     failed_stage = next(
@@ -608,13 +694,16 @@ def aggregate_pipeline_run(
         for stage in stages
         if stage.status in {"Completed", "Success", "Image published"}
     )
-    current_stage = failed_stage or next(
+    active_stage = next(
         (
             stage.identifier
             for stage in stages
             if stage.status in {"Active", "Running", "Queued"}
         ),
         None,
+    )
+    current_stage = failed_stage or active_stage or (
+        completed_stages[-1] if completed_stages else None
     )
 
     started_at = github.started_at or github.created_at
@@ -659,7 +748,11 @@ def aggregate_pipeline_run(
         failed_stage=failed_stage,
         image_tag=image_tag,
         image_digest=ghcr.digest if image_correlated else None,
-        deployment_revision=argocd.revision if deployment_correlated else None,
+        deployment_revision=(
+            argocd.observed_revision
+            if deployment_correlated
+            else None
+        ),
         deployment_namespace=(
             kubernetes.namespace
             if runtime_correlated

@@ -307,6 +307,8 @@ def _operational_event(
         "CI": "GitHub Actions",
         "DB": "Docker Build",
         "CR": "GitHub Container Registry",
+        "CD": "Argo CD",
+        "K8": "Kubernetes",
     }
     if status.upper() in {"FAILED", "ATTENTION REQUIRED"}:
         classification = "failure"
@@ -1694,6 +1696,140 @@ def _build_ghcr_feed(snapshot: dict[str, Any]) -> list[OperationalEvent]:
     ]
 
 
+def _provider_event_timestamp(value: object) -> str | None:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return value if isinstance(value, str) else None
+
+
+def _build_argocd_feed(snapshot: dict[str, Any]) -> list[OperationalEvent]:
+    details = snapshot.get("argocd") or {}
+    availability = details.get("availability")
+    if availability != "available":
+        return [
+            _operational_event(
+                timestamp=None,
+                source="CD",
+                category="argocd",
+                status="WARNING",
+                message="Argo CD observation unavailable",
+                classification="warning",
+                detail=details.get("reason"),
+                order=90,
+                event_id="argocd:unavailable",
+            )
+        ]
+
+    sync_status = str(details.get("sync_status") or "Unknown")
+    health_status = str(details.get("health_status") or "Unknown")
+    lifecycle_status = details.get("status")
+    if lifecycle_status == "completed":
+        status = "SUCCESS"
+        message = "Argo CD reconciliation completed"
+    elif lifecycle_status == "running":
+        status = "RUNNING"
+        message = "Argo CD reconciliation in progress"
+    elif lifecycle_status == "failed":
+        status = "FAILED"
+        message = "Argo CD reconciliation failed"
+    else:
+        status = "INFO"
+        message = "Argo CD reconciliation observed"
+    revision = details.get("observed_revision")
+    return [
+        _operational_event(
+            timestamp=_provider_event_timestamp(details.get("observed_at")),
+            source="CD",
+            category="argocd",
+            status=status,
+            message=message,
+            detail=(
+                f"Sync: {sync_status} · Health: {health_status}"
+                + (f" · Revision: {revision}" if revision else "")
+            ),
+            order=60,
+            event_id=f"argocd:{revision or 'unknown'}:{sync_status}:{health_status}",
+        )
+    ]
+
+
+def _build_kubernetes_feed(snapshot: dict[str, Any]) -> list[OperationalEvent]:
+    details = snapshot.get("kubernetes") or {}
+    availability = details.get("availability")
+    if availability != "available":
+        return [
+            _operational_event(
+                timestamp=None,
+                source="K8",
+                category="kubernetes",
+                status="WARNING",
+                message="Kubernetes observation unavailable",
+                classification="warning",
+                detail=details.get("reason"),
+                order=91,
+                event_id="kubernetes:unavailable",
+            )
+        ]
+
+    rollout_status = str(details.get("rollout_status") or "Unknown")
+    lifecycle_status = details.get("status")
+    if lifecycle_status == "completed":
+        status = "SUCCESS"
+        message = "Deployment available"
+    elif lifecycle_status == "running":
+        status = "RUNNING"
+        message = "Deployment rollout progressing"
+    elif lifecycle_status == "failed":
+        status = "FAILED"
+        message = "Deployment rollout failed"
+    else:
+        status = "INFO"
+        message = "Deployment rollout observed"
+    deployment = details.get("deployment") or "dashboard"
+    events = [
+        _operational_event(
+            timestamp=_provider_event_timestamp(details.get("observed_at")),
+            source="K8",
+            category="kubernetes",
+            status=status,
+            message=message,
+            detail=(
+                f"Deployment: {deployment} · Rollout: {rollout_status}"
+            ),
+            order=70,
+            event_id=(
+                f"kubernetes:{deployment}:"
+                f"{details.get('replica_set_revision') or rollout_status}"
+            ),
+        )
+    ]
+    events.extend(
+        _operational_event(
+            timestamp=_provider_event_timestamp(pod.get("created_at")),
+            source="K8",
+            category="kubernetes",
+            status="SUCCESS" if pod.get("ready") else "RUNNING",
+            message=(
+                f"Pod ready: {pod.get('name')}"
+                if pod.get("ready")
+                else f"Pod observed: {pod.get('name')}"
+            ),
+            detail=(
+                f"Phase: {pod.get('phase') or 'Unknown'} · "
+                f"Restarts: {pod.get('restart_count', 0)}"
+            ),
+            order=71,
+            event_id=(
+                f"kubernetes:pod:{pod.get('name')}:"
+                f"{pod.get('ready')}:{pod.get('restart_count', 0)}"
+            ),
+        )
+        for pod in (details.get("pods") or [])
+        if isinstance(pod, dict)
+    )
+    return events
+
+
 def _render_context_action(
     details: dict[str, Any],
     *,
@@ -1797,6 +1933,8 @@ def _render_stage_timeline(
         *_build_github_feed(details),
         *_build_docker_build_feed(details),
         *_build_ghcr_feed(details),
+        *_build_argocd_feed(details),
+        *_build_kubernetes_feed(details),
     ]
     events = (
         all_events

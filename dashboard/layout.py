@@ -79,6 +79,8 @@ OPERATIONAL_SOURCE_LEGEND = (
     ("CI", "CI/CD"),
     ("DB", "Docker Build"),
     ("CR", "GHCR"),
+    ("CD", "Argo CD"),
+    ("K8", "Kubernetes"),
 )
 
 

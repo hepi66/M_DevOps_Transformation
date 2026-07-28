@@ -46,11 +46,15 @@ k8s/
 The workload uses:
 
 - Namespace `m-devops-dashboard`
+- Dedicated ServiceAccount `m-devops-dashboard`
 - One replica with a rolling update strategy
 - ClusterIP Service `m-devops-dashboard` on port `8501`
 - Conservative CPU and memory requests and limits for a small demonstration
   workload
 - Streamlit `/_stcore/health` readiness and liveness checks
+- Namespace-scoped, read-only access to its Deployment, ReplicaSets, and Pods
+- Resource-name-scoped, read-only access to the
+  `m-devops-dashboard` Argo CD Application
 
 Readiness starts after 10 seconds and checks every 10 seconds so traffic is
 sent only when Streamlit is ready. Liveness starts after 30 seconds and checks
@@ -107,8 +111,48 @@ The expected health response has HTTP status `200`. Stop port-forwarding with
 
 The dashboard can start without GitHub or GHCR credentials. Providers that
 cannot authenticate retain their established unavailable or demonstration
-behavior. Live Argo CD and Kubernetes dashboard providers remain outside this
-deployment increment.
+behavior. Argo CD and Kubernetes observations use in-cluster ServiceAccount
+authentication automatically. Local execution requires no kubeconfig and
+returns a safe unavailable state for those providers.
+
+## Live Observation Permissions
+
+The dashboard ServiceAccount has only:
+
+- `get` and `list` for Deployments and ReplicaSets in
+  `m-devops-dashboard`
+- `get` and `list` for Pods in `m-devops-dashboard`
+- `get` for the named Argo CD Application `m-devops-dashboard` in `argocd`
+
+No ClusterRole, cluster-admin permission, Secret read permission, or write
+verb is granted.
+
+GitHub authentication remains optional and uses the existing GitHub CLI
+mechanism where that CLI is available. `gh` recognizes `GH_TOKEN`, so an
+environment-specific deployment may source that variable from a Kubernetes
+Secret managed outside this repository. The current slim dashboard image does
+not install the GitHub CLI; its in-cluster lifecycle reconstruction therefore
+uses Argo CD and Kubernetes evidence when GitHub retrieval is unavailable.
+Never store token values in this repository.
+
+## Fragment Refresh Verification
+
+The Delivery Pipeline and Operational Detail Viewer use Streamlit-native
+fragments. To verify:
+
+1. Open the dashboard and select a non-default Operational Viewer filter.
+2. Observe the live countdown changing once per second.
+3. Confirm provider data changes only when the displayed next-refresh time is
+   reached.
+4. Select `Refresh now` and confirm the monitoring area refreshes immediately.
+5. Confirm the selected viewer filter remains unchanged.
+6. Confirm static summary, deployment, environment, and lower platform cards
+   are not periodically recreated.
+
+The adaptive defaults are 7 seconds for active work, 20 seconds for partial or
+unavailable retrieval, and 45 seconds while idle. The implementation contains
+no global recurring `st.rerun()`, background thread, or simulated pipeline
+transition.
 
 ## Verified Initial Deployment
 

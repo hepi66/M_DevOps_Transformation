@@ -41,6 +41,8 @@ EVENT_SOURCE_STAGES = {
     "CI": "CI",
     "DB": "Build",
     "CR": "GHCR",
+    "CD": "Argo CD",
+    "K8": "Kubernetes",
 }
 PIPELINE_STAGE_SOURCES = {
     stage: source for source, stage in EVENT_SOURCE_STAGES.items()

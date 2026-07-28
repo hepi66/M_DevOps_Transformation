@@ -60,11 +60,15 @@ timestamps, duration, and refresh metadata. The model also retains normalized
 GitHub, GHCR, Argo CD, and Kubernetes observations without exposing their raw
 provider dictionaries to pipeline presentation code.
 
-The current retrieval layer populates GitHub, GitHub Actions, Docker Build,
-and GHCR data. Argo CD and Kubernetes normalization is available as a stable
-boundary, but remains `unknown` until live dashboard providers supply those
-observations. Static Argo CD and Kubernetes pipeline presentation therefore
-remains unchanged.
+The retrieval layer populates GitHub, GitHub Actions, Docker Build, and GHCR
+data. When the dashboard runs in Kubernetes, read-only providers additionally
+observe the dashboard Argo CD Application and its Kubernetes Deployment,
+ReplicaSets, and Pods. Local execution does not require cluster credentials;
+the cluster observations return an explicit unavailable state.
+
+The cluster providers use the automatically mounted Pod ServiceAccount token
+and cluster certificate. They do not invoke `kubectl` or the `argocd` CLI,
+embed credentials, or request write access.
 
 ### Correlation Strategy
 
@@ -77,16 +81,44 @@ Correlation is evidence-based:
 4. Deployment and runtime observations are attached only when their revisions
    or image tags match already-correlated identifiers.
 
+After a dashboard Pod restart, the currently deployed immutable image tag can
+act as the commit anchor even when GitHub retrieval is temporarily
+unavailable. This permits reconstruction of independently verified runtime
+state without relying on transient Streamlit session state.
+
 Missing or conflicting identifiers produce an `unknown` or `partial`
 correlation result. The aggregator never guesses a relationship from timing,
 names, or ordering alone.
 
-### Refresh Foundation
+### Targeted Live Monitoring
 
-The lifecycle model contains the last refresh time, refresh status, configured
-refresh interval, and calculated next refresh time. These values describe the
-current retrieval observation only. No timer, polling, countdown, fragment
-refresh, or background refresh behavior is implemented.
+Streamlit fragments refresh only the Delivery Pipeline, refresh indicator,
+countdown, manual refresh control, and Operational Detail Viewer. There is no
+periodic complete-page rerun.
+
+Two fragments share one session-scoped monitoring state. When a refresh is
+due, the first fragment retrieves all providers and creates exactly one
+authoritative `PipelineRun`; the other fragment reuses it. One-second fragment
+ticks update the lightweight countdown, but provider calls occur only at the
+scheduled interval or after `Refresh now`.
+
+The deterministic defaults are:
+
+- 7 seconds for a queued or active run
+- 20 seconds after unavailable or partial retrieval
+- 45 seconds while the latest known run is idle
+
+Manual refresh marks the same shared observation immediately due and performs
+a fragment-scoped rerun. Viewer filter and selected pipeline context remain in
+Streamlit session state and are not reset by automatic refresh.
+
+Refresh scheduling is presentation state and never creates Operational
+Events. Pipeline stages change only from provider evidence; no simulated
+progression, artificial delay, or animation exists.
+
+When a retrieval attempt raises an error, the last successful observation is
+retained with its timestamp and the monitoring status reports the retry
+schedule. Provider failures remain isolated from the complete dashboard.
 
 ## Incremental Architecture Principles
 
@@ -134,10 +166,8 @@ Phase 1 excludes:
 - Credentials
 - Network clients
 - Production control functions
-- Live Argo CD integration
-- Live Kubernetes integration
 - Live DORA data integration
-- Automatic or background refresh
+- Background services or non-Streamlit refresh mechanisms
 
 Later-phase technologies may appear during Phase 1 as realistic demonstration data without becoming runtime dependencies.
 
