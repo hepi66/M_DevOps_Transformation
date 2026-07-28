@@ -4,7 +4,6 @@ M-DevOps Transformation
 /
 DevOpsDashboard_Chat_Guide_v1.1.md
 
-
 # DevOpsDashboard Chat Guide
 
 Version: 1.1
