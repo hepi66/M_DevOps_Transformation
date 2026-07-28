@@ -1,0 +1,64 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: m-devops-dashboard-observer
+  namespace: m-devops-dashboard
+rules:
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: m-devops-dashboard-observer
+  namespace: m-devops-dashboard
+subjects:
+  - kind: ServiceAccount
+    name: m-devops-dashboard
+    namespace: m-devops-dashboard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: m-devops-dashboard-observer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: m-devops-dashboard-argocd-observer
+  namespace: argocd
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - applications
+    resourceNames:
+      - m-devops-dashboard
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: m-devops-dashboard-argocd-observer
+  namespace: argocd
+subjects:
+  - kind: ServiceAccount
+    name: m-devops-dashboard
+    namespace: m-devops-dashboard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: m-devops-dashboard-argocd-observer

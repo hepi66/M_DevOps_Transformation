@@ -1022,8 +1022,8 @@ def test_detailed_history_is_limited_to_normalized_run():
         ("CI", {"CI"}),
         ("Build", {"DB"}),
         ("GHCR", {"CR"}),
-        ("Argo CD", set()),
-        ("Kubernetes", set()),
+        ("Argo CD", {"CD"}),
+        ("Kubernetes", {"K8"}),
     ],
 )
 def test_categorized_views_use_shared_renderer(
@@ -1248,6 +1248,8 @@ def test_footer_legend_contains_docker_build():
     assert ("CI", "CI/CD") in OPERATIONAL_SOURCE_LEGEND
     assert ("DB", "Docker Build") in OPERATIONAL_SOURCE_LEGEND
     assert ("CR", "GHCR") in OPERATIONAL_SOURCE_LEGEND
+    assert ("CD", "Argo CD") in OPERATIONAL_SOURCE_LEGEND
+    assert ("K8", "Kubernetes") in OPERATIONAL_SOURCE_LEGEND
 
 
 def test_build_pipeline_interaction_selects_build_stage(monkeypatch):

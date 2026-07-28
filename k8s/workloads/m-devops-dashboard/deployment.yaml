@@ -26,6 +26,7 @@ spec:
         app.kubernetes.io/instance: m-devops-dashboard
         app.kubernetes.io/part-of: m-devops-transformation
     spec:
+      serviceAccountName: m-devops-dashboard
       terminationGracePeriodSeconds: 30
       containers:
         - name: dashboard

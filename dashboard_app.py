@@ -7,11 +7,16 @@ from dashboard.layout import (
     render_dashboard_styles,
     render_page_header,
 )
-from dashboard.lifecycle import aggregate_pipeline_run
+from dashboard.monitoring import (
+    DEFAULT_REFRESH_POLICY,
+    MONITORING_STATE_KEY,
+    MonitoringState,
+    ensure_monitoring_state,
+    render_monitoring_status,
+    request_monitoring_refresh,
+)
 from dashboard.navigation import render_navigation
 from dashboard.operational_detail_viewer import (
-    clear_dashboard_snapshot,
-    load_dashboard_snapshot,
     render_operational_detail_viewer,
 )
 from dashboard.overview_cards import render_platform_cards, render_summary_cards
@@ -24,13 +29,28 @@ st.set_page_config(
 )
 render_dashboard_styles()
 
-selected_page = render_navigation(clear_dashboard_snapshot)
+selected_page = render_navigation(show_refresh_control=False)
+
+
+@st.fragment(run_every=DEFAULT_REFRESH_POLICY.countdown_seconds)
+def render_pipeline_monitoring_fragment() -> MonitoringState:
+    """Refresh and render only the shared live-monitoring pipeline area."""
+    monitoring_state = ensure_monitoring_state()
+    with st.container(border=True):
+        if render_monitoring_status(monitoring_state):
+            request_monitoring_refresh()
+            st.rerun(scope="fragment")
+        render_delivery_pipeline(monitoring_state.pipeline_run)
+    return monitoring_state
+
+
+@st.fragment(run_every=DEFAULT_REFRESH_POLICY.countdown_seconds)
+def render_operational_monitoring_fragment() -> None:
+    """Render the viewer from the same scheduled monitoring observation."""
+    monitoring_state = ensure_monitoring_state()
+    render_operational_detail_viewer(monitoring_state.snapshot)
 
 if selected_page == "overview":
-    with st.spinner("Loading dashboard data..."):
-        runtime_snapshot = load_dashboard_snapshot()
-        pipeline_run = aggregate_pipeline_run(runtime_snapshot)
-
     render_page_header(
         "M-DevOps Dashboard",
         "A professional dashboard for presenting the progress, capabilities, "
@@ -39,8 +59,7 @@ if selected_page == "overview":
 
     render_summary_cards()
 
-    with st.container(border=True):
-        render_delivery_pipeline(pipeline_run)
+    monitoring_state = render_pipeline_monitoring_fragment()
 
     overview_column, logs_column = st.columns(
         [1, 2],
@@ -59,8 +78,14 @@ if selected_page == "overview":
         height="stretch",
         key="operational-detail-viewer-card",
     ):
-        render_operational_detail_viewer(runtime_snapshot)
+        render_operational_monitoring_fragment()
 
-    render_platform_cards(runtime_snapshot)
+    current_monitoring_state = st.session_state.get(MONITORING_STATE_KEY)
+    platform_snapshot = (
+        current_monitoring_state.snapshot
+        if isinstance(current_monitoring_state, MonitoringState)
+        else monitoring_state.snapshot
+    )
+    render_platform_cards(platform_snapshot)
 
     render_dashboard_footer()

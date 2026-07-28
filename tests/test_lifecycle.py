@@ -112,7 +112,7 @@ def test_provider_normalization_preserves_identifiers_and_hierarchy():
     assert github.workflow_run_id == "85"
     assert github.jobs[0].steps[0].name == "Build and push"
     assert ghcr.tags == ("latest", COMMIT_SHA)
-    assert argocd.revision == COMMIT_SHA
+    assert argocd.observed_revision == COMMIT_SHA
     assert kubernetes.pods[0].ready is True
 
 
@@ -152,6 +152,7 @@ def test_unknown_correlation_does_not_guess_deployment_identity():
     snapshot["ghcr"]["tags"] = ["latest"]
     snapshot["argocd"]["revision"] = "different-revision"
     snapshot["kubernetes"]["revision"] = "another-revision"
+    snapshot["kubernetes"]["image_tag"] = "different-image"
 
     pipeline_run = aggregate_pipeline_run(snapshot)
 
@@ -170,5 +171,6 @@ def test_missing_providers_produce_stable_unknown_fallback():
     assert pipeline_run.workflow_run_id is None
     assert pipeline_run.refresh_status == "unavailable"
     assert pipeline_run.correlation_status == "unknown"
-    assert pipeline_run.stage("argocd").source_classification == "DEMO"
-    assert pipeline_run.stage("kubernetes").source_classification == "DEMO"
+    assert pipeline_run.stage("argocd").source_classification == "LIVE"
+    assert pipeline_run.stage("kubernetes").source_classification == "LIVE"
+    assert all(stage.status == "Unknown" for stage in pipeline_run.stages)

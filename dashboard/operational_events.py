@@ -58,6 +58,8 @@ def order_operational_events(
         "CI": 2,
         "DB": 3,
         "CR": 4,
+        "CD": 5,
+        "K8": 6,
     }
 
     def sort_key(event: OperationalEvent) -> tuple[float, int, int, str]:
