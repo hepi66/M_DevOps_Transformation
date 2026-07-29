@@ -10,7 +10,10 @@ from typing import Any
 
 import streamlit as st
 
-from dashboard.formatting import format_dashboard_timestamp
+from dashboard.formatting import (
+    format_dashboard_timestamp,
+    normalize_dashboard_timestamp,
+)
 from dashboard.layout import render_component_header
 from dashboard.operational_events import (
     EventClassification,
@@ -286,7 +289,7 @@ def _workflow_event_state(conclusion: str | None) -> str:
 
 def _operational_event(
     *,
-    timestamp: str | None,
+    timestamp: object,
     source: str,
     category: str,
     status: str,
@@ -316,7 +319,7 @@ def _operational_event(
         classification = "warning"
 
     return OperationalEvent(
-        timestamp=timestamp,
+        timestamp=normalize_dashboard_timestamp(timestamp),
         source_identifier=source_names[source],
         source_abbreviation=source,
         category=category,
@@ -496,7 +499,11 @@ def _load_github_actions_details(
     workflow_name: str,
 ) -> dict[str, Any]:
     workflow = next(
-        (run for run in runs if run.get("name") == workflow_name),
+        (
+            _normalize_execution_timestamps(run)
+            for run in runs
+            if run.get("name") == workflow_name
+        ),
         None,
     )
     if not workflow:
@@ -530,9 +537,9 @@ def _load_github_actions_details(
     for job in jobs:
         if not isinstance(job, dict):
             continue
-        normalized_job = dict(job)
+        normalized_job = _normalize_execution_timestamps(job)
         normalized_job["steps"] = [
-            dict(step)
+            _normalize_execution_timestamps(step)
             for step in (job.get("steps") or [])
             if isinstance(step, dict)
         ]
@@ -543,6 +550,19 @@ def _load_github_actions_details(
         "workflow": workflow,
         "jobs": normalized_jobs,
     }
+
+
+def _normalize_execution_timestamps(
+    record: dict[str, Any],
+) -> dict[str, Any]:
+    """Remove unset GitHub timestamp sentinels before event projection."""
+    normalized = dict(record)
+    for field in ("createdAt", "startedAt", "updatedAt", "completedAt"):
+        if field in normalized:
+            normalized[field] = normalize_dashboard_timestamp(
+                normalized.get(field)
+            )
+    return normalized
 
 
 def _project_docker_build(
@@ -694,7 +714,7 @@ def _load_github_status() -> dict[str, Any]:
     if not isinstance(repository, dict) or not branch:
         return {"state": "Not available", "reason": "GitHub repository could not be resolved."}
 
-    runs = _run_gh_json(
+    raw_runs = _run_gh_json(
         "run",
         "list",
         "--branch",
@@ -704,6 +724,15 @@ def _load_github_status() -> dict[str, Any]:
         "--json",
         "databaseId,number,name,displayTitle,status,conclusion,"
         "createdAt,startedAt,updatedAt,url,headBranch,headSha",
+    )
+    runs = (
+        [
+            _normalize_execution_timestamps(run)
+            for run in raw_runs
+            if isinstance(run, dict)
+        ]
+        if isinstance(raw_runs, list)
+        else raw_runs
     )
     workflow = runs[0] if isinstance(runs, list) and runs else None
     github_actions = (

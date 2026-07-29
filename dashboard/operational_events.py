@@ -1,6 +1,8 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import timezone
 from typing import Literal
+
+from dashboard.formatting import parse_dashboard_timestamp
 
 EventClassification = Literal[
     "lifecycle",
@@ -63,14 +65,15 @@ def order_operational_events(
     }
 
     def sort_key(event: OperationalEvent) -> tuple[float, int, int, str]:
-        try:
-            timestamp = datetime.fromisoformat(
-                (event.timestamp or "").replace("Z", "+00:00")
-            )
+        timestamp = parse_dashboard_timestamp(event.timestamp)
+        if timestamp is not None:
             if timestamp.tzinfo is None:
                 timestamp = timestamp.replace(tzinfo=timezone.utc)
-            epoch = timestamp.timestamp()
-        except (AttributeError, ValueError):
+            try:
+                epoch = timestamp.timestamp()
+            except (OSError, OverflowError, ValueError):
+                epoch = float("inf")
+        else:
             epoch = float("inf")
 
         timestamp_order = -epoch if epoch != float("inf") else epoch
