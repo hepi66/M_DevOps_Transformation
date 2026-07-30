@@ -74,15 +74,11 @@ def get_ci_pipeline_stage_data(
         "timed_out",
     }
 
-    if raw_status in waiting_states:
-        status = "Running"
-    elif raw_status == "in_progress":
+    if raw_status in waiting_states or raw_status == "in_progress":
         status = "Running"
     elif conclusion == "success":
         status = "Completed"
-    elif conclusion in failure_states:
-        status = "Failed"
-    elif conclusion == "cancelled":
+    elif conclusion in failure_states or conclusion == "cancelled":
         status = "Failed"
     else:
         status = "Unavailable"

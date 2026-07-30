@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
@@ -122,7 +124,7 @@ def pipeline_source_context_color(source: str | None) -> str:
     return pipeline_stage_context_color(EVENT_SOURCE_STAGES.get(str(source)))
 
 
-def event_pipeline_stage(event: "OperationalEvent") -> str | None:
+def event_pipeline_stage(event: OperationalEvent) -> str | None:
     """Associate a normalized operational source with its pipeline stage."""
     return EVENT_SOURCE_STAGES.get(event.source_abbreviation)
 
