@@ -24,13 +24,16 @@ from dashboard.operational_events import (
     order_operational_events,
 )
 from dashboard.pipeline_context import (
+    PIPELINE_SELECTION_OVERRIDE_KEY,
     PIPELINE_STAGE_CONTEXT_COLORS,
     PIPELINE_STAGE_FILTERS,
     event_pipeline_stage,
     filter_events_for_stage,
     pipeline_source_context_color,
     pipeline_stage_context_color,
+    select_pipeline_stage,
     selected_pipeline_stage,
+    synchronize_active_pipeline_stage,
 )
 from dashboard.pipeline_model import PIPELINE_STAGES, get_pipeline_stages
 
@@ -1125,6 +1128,53 @@ def test_all_does_not_fabricate_an_active_stage():
     assert selected_pipeline_stage({"operational_detail_source": "All"}) is None
 
 
+def test_active_pipeline_stage_drives_viewer_without_user_override():
+    state = {}
+    pipeline_run = Mock(current_stage="build")
+
+    selection = synchronize_active_pipeline_stage(state, pipeline_run)
+
+    assert selection == "Build"
+    assert state["operational_detail_source"] == "Build"
+    assert state[PIPELINE_SELECTION_OVERRIDE_KEY] is False
+
+
+def test_explicit_stage_selection_stops_automatic_following():
+    state = {}
+    select_pipeline_stage(state, "CI")
+
+    selection = synchronize_active_pipeline_stage(
+        state,
+        Mock(current_stage="ghcr"),
+    )
+
+    assert selection == "CI"
+    assert state[PIPELINE_SELECTION_OVERRIDE_KEY] is True
+
+
+def test_all_returns_viewer_to_live_pipeline_stage():
+    state = {}
+    select_pipeline_stage(state, "Kubernetes")
+    select_pipeline_stage(state, "All")
+
+    selection = synchronize_active_pipeline_stage(
+        state,
+        Mock(current_stage="ghcr"),
+    )
+
+    assert selection == "GHCR"
+    assert state[PIPELINE_SELECTION_OVERRIDE_KEY] is False
+
+
+def test_viewer_filter_change_records_manual_override(monkeypatch):
+    session_state = {"operational_detail_source": "Argo CD"}
+    monkeypatch.setattr(viewer.st, "session_state", session_state)
+
+    viewer._record_viewer_selection()
+
+    assert session_state[PIPELINE_SELECTION_OVERRIDE_KEY] is True
+
+
 def test_filter_change_uses_one_github_snapshot(monkeypatch):
     snapshot_loader = Mock(return_value=_docker_snapshot())
     _configure_viewer_mocks(monkeypatch, "Docker Build", snapshot_loader)
@@ -1305,7 +1355,30 @@ def test_build_pipeline_interaction_selects_build_stage(monkeypatch):
     pipeline.render_delivery_pipeline()
 
     assert fake_streamlit.session_state["operational_detail_source"] == "Build"
-    fake_streamlit.rerun.assert_called_once_with()
+    assert (
+        fake_streamlit.session_state[PIPELINE_SELECTION_OVERRIDE_KEY]
+        is True
+    )
+
+
+def test_selected_pipeline_stage_uses_selected_card_key(monkeypatch):
+    fake_streamlit = _PipelineStreamlit()
+    fake_streamlit.session_state.update(
+        {
+            "operational_detail_source": "Code",
+            PIPELINE_SELECTION_OVERRIDE_KEY: True,
+        }
+    )
+    monkeypatch.setattr(pipeline, "st", fake_streamlit)
+    monkeypatch.setattr(
+        pipeline,
+        "get_pipeline_stages",
+        lambda _runtime_snapshot: PIPELINE_STAGES,
+    )
+
+    pipeline.render_delivery_pipeline()
+
+    assert "pipeline-stage-card-code-selected" in fake_streamlit.container_keys
 
 
 @pytest.mark.parametrize(
@@ -1441,6 +1514,8 @@ def test_ci_pipeline_renderer_uses_badge_icon_and_existing_stage(monkeypatch):
         key="pipeline-stage-ci",
         type="tertiary",
         width="content",
+        on_click=pipeline._select_stage,
+        args=(ci_stage,),
     )
     header.caption.assert_called_once_with(
         "GitHub Actions",
@@ -1872,6 +1947,8 @@ class _PipelineColumn:
         return None
 
     def button(self, label, **kwargs):
+        if label.startswith("Build") and kwargs.get("on_click"):
+            kwargs["on_click"](*kwargs.get("args", ()))
         return label.startswith("Build")
 
     def caption(self, *args, **kwargs):
@@ -1891,6 +1968,7 @@ class _PipelineStreamlit:
     def __init__(self):
         self.session_state = {}
         self.rerun = Mock()
+        self.container_keys = []
 
     def subheader(self, *args, **kwargs):
         return None
@@ -1906,6 +1984,8 @@ class _PipelineStreamlit:
         return [_PipelineColumn() for _ in range(count)]
 
     def container(self, **kwargs):
+        if kwargs.get("key"):
+            self.container_keys.append(kwargs["key"])
         return _PipelineColumn()
 
     def button(self, label, **kwargs):

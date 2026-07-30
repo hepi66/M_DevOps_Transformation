@@ -40,6 +40,7 @@ class RefreshPolicy:
 DEFAULT_REFRESH_POLICY = RefreshPolicy()
 MONITORING_STATE_KEY = "dashboard_monitoring_state"
 FORCE_REFRESH_KEY = "dashboard_monitoring_force_refresh"
+LIVE_REFRESH_KEY = "dashboard_live_refresh"
 
 
 @dataclass(frozen=True)
@@ -154,6 +155,7 @@ def refresh_monitoring_state(
 def ensure_monitoring_state(
     *,
     now: datetime | None = None,
+    automatic: bool = True,
 ) -> MonitoringState:
     """Refresh only when due, otherwise reuse the current observation."""
     current_time = now or datetime.now(timezone.utc)
@@ -163,7 +165,10 @@ def ensure_monitoring_state(
         not isinstance(current, MonitoringState)
         or current_time >= current.next_refresh
     )
-    if force_refresh or due:
+    if force_refresh or (automatic and due) or not isinstance(
+        current,
+        MonitoringState,
+    ):
         current = refresh_monitoring_state(
             current if isinstance(current, MonitoringState) else None,
             now=current_time,
@@ -171,6 +176,36 @@ def ensure_monitoring_state(
         st.session_state[MONITORING_STATE_KEY] = current
         st.session_state[FORCE_REFRESH_KEY] = False
     return current
+
+
+def live_refresh_enabled() -> bool:
+    """Return the global automatic scheduling mode, enabled by default."""
+    return bool(st.session_state.get(LIVE_REFRESH_KEY, True))
+
+
+def automatic_refresh_interval(
+    enabled: bool,
+    *,
+    policy: RefreshPolicy = DEFAULT_REFRESH_POLICY,
+) -> int | None:
+    """Return fragment scheduling only while Live Refresh is enabled."""
+    return policy.countdown_seconds if enabled else None
+
+
+def render_live_refresh_control() -> bool:
+    """Render the global development refresh mode in the sidebar."""
+    enabled = st.sidebar.toggle(
+        "Live Refresh",
+        value=live_refresh_enabled(),
+        key=LIVE_REFRESH_KEY,
+        help="Enable adaptive automatic monitoring updates.",
+    )
+    st.sidebar.caption(
+        "ON · Adaptive monitoring"
+        if enabled
+        else "OFF · Manual refresh only"
+    )
+    return bool(enabled)
 
 
 def request_monitoring_refresh(
@@ -207,8 +242,11 @@ def monitoring_status_text(
     state: MonitoringState,
     *,
     now: datetime | None = None,
+    automatic: bool = True,
 ) -> str:
     """Return compact English monitoring status text."""
+    if not automatic:
+        return "Live refresh paused · Manual updates only"
     remaining = seconds_until_refresh(state, now=now)
     if (
         state.retrieval_failed
@@ -220,14 +258,20 @@ def monitoring_status_text(
     return f"Idle · Next check in {remaining}s"
 
 
-def render_monitoring_status(state: MonitoringState) -> bool:
+def render_monitoring_status(
+    state: MonitoringState,
+    *,
+    automatic: bool = True,
+) -> bool:
     """Render refresh state and return whether manual refresh was requested."""
     status_column, updated_column, action_column = st.columns(
         [1.2, 1.2, 0.6],
         gap="small",
         vertical_alignment="center",
     )
-    status_column.caption(monitoring_status_text(state))
+    status_column.caption(
+        monitoring_status_text(state, automatic=automatic)
+    )
     updated_column.caption(
         "Last updated: "
         + (
