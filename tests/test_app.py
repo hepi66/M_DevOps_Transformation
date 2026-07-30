@@ -1178,6 +1178,24 @@ def test_viewer_filter_change_records_manual_override(monkeypatch):
     assert session_state[PIPELINE_SELECTION_OVERRIDE_KEY] is True
 
 
+def test_all_selection_immediately_returns_to_live_pipeline_stage(monkeypatch):
+    session_state = {
+        OPERATIONAL_DETAIL_WIDGET_KEY: "All",
+        "operational_detail_source": "Build",
+        PIPELINE_SELECTION_OVERRIDE_KEY: True,
+        "dashboard_monitoring_state": Mock(
+            pipeline_run=Mock(current_stage="ghcr")
+        ),
+    }
+    monkeypatch.setattr(viewer.st, "session_state", session_state)
+
+    viewer._record_viewer_selection()
+
+    assert session_state["operational_detail_source"] == "GHCR"
+    assert session_state[OPERATIONAL_DETAIL_WIDGET_KEY] == "GHCR"
+    assert session_state[PIPELINE_SELECTION_OVERRIDE_KEY] is False
+
+
 def test_filter_change_uses_one_github_snapshot(monkeypatch):
     snapshot_loader = Mock(return_value=_docker_snapshot())
     _configure_viewer_mocks(monkeypatch, "Docker Build", snapshot_loader)
@@ -1710,6 +1728,20 @@ def test_each_pipeline_stage_has_the_established_context_color():
     }
     assert pipeline_stage_context_color("Kubernetes") == "#73B0E7"
     assert pipeline_source_context_color("DB") == "#06B6D4"
+
+
+def test_selected_stage_css_uses_centralized_stage_color(monkeypatch):
+    html_output = Mock()
+    monkeypatch.setattr(layout.st, "html", html_output)
+    monkeypatch.setattr(
+        layout.st,
+        "session_state",
+        {"operational_detail_source": "Build"},
+    )
+
+    layout.render_dashboard_styles()
+
+    assert "--pipeline-context-accent: #06B6D4" in html_output.call_args.args[0]
 
 
 @pytest.mark.parametrize(
