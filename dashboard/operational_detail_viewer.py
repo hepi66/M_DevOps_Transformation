@@ -27,6 +27,7 @@ from dashboard.pipeline_context import (
     normalize_pipeline_filter,
     pipeline_source_context_color,
     pipeline_stage_source,
+    select_pipeline_stage,
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
@@ -2080,5 +2081,14 @@ def render_operational_detail_viewer(
             PIPELINE_STAGE_FILTERS,
             label_visibility="collapsed",
             key=source_key,
+            on_change=_record_viewer_selection,
         )
         _render_stage_timeline(source, runtime_snapshot, pipeline_run)
+
+
+def _record_viewer_selection() -> None:
+    """Turn a Viewer selection into an explicit override, or resume live mode."""
+    select_pipeline_stage(
+        st.session_state,
+        st.session_state.get("operational_detail_source", "All"),
+    )

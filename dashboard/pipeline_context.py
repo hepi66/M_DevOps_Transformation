@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, MutableMapping
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from dashboard.lifecycle import PipelineRun
     from dashboard.operational_events import OperationalEvent
 
 # Authoritative operational source vocabulary. Its insertion order is the
@@ -88,6 +89,11 @@ EVENT_SOURCE_STAGES = {
 PIPELINE_STAGE_SOURCES = {
     stage: source for source, stage in EVENT_SOURCE_STAGES.items()
 }
+PIPELINE_IDENTIFIER_STAGES = {
+    identifier: stage
+    for stage, identifier in PIPELINE_STAGE_IDENTIFIERS.items()
+}
+PIPELINE_SELECTION_OVERRIDE_KEY = "pipeline_selection_manual"
 
 
 def normalize_pipeline_filter(selection: object) -> str:
@@ -104,6 +110,40 @@ def selected_pipeline_stage(
         session_state.get("operational_detail_source", "All")
     )
     return PIPELINE_STAGE_IDENTIFIERS.get(selection)
+
+
+def select_pipeline_stage(
+    session_state: MutableMapping[str, object],
+    stage: str,
+) -> None:
+    """Record one explicit stage selection without duplicating its value."""
+    normalized_stage = normalize_pipeline_filter(stage)
+    session_state["operational_detail_source"] = normalized_stage
+    session_state[PIPELINE_SELECTION_OVERRIDE_KEY] = (
+        normalized_stage != "All"
+    )
+
+
+def synchronize_active_pipeline_stage(
+    session_state: MutableMapping[str, object],
+    pipeline_run: PipelineRun,
+) -> str:
+    """Follow PipelineRun unless the user has explicitly selected a stage."""
+    selection = normalize_pipeline_filter(
+        session_state.get("operational_detail_source", "All")
+    )
+    if selection == "All":
+        session_state[PIPELINE_SELECTION_OVERRIDE_KEY] = False
+
+    if session_state.get(PIPELINE_SELECTION_OVERRIDE_KEY, False):
+        return selection
+
+    active_stage = PIPELINE_IDENTIFIER_STAGES.get(
+        pipeline_run.current_stage or ""
+    )
+    synchronized = active_stage or "All"
+    session_state["operational_detail_source"] = synchronized
+    return synchronized
 
 
 def pipeline_stage_context_color(stage: str | None) -> str:

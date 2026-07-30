@@ -3,7 +3,10 @@ from pathlib import Path
 import streamlit as st
 
 from dashboard.lifecycle import PipelineRun
-from dashboard.pipeline_context import selected_pipeline_stage
+from dashboard.pipeline_context import (
+    select_pipeline_stage,
+    selected_pipeline_stage,
+)
 from dashboard.pipeline_model import PipelineStage, get_pipeline_stages
 
 ASSET_DIRECTORY = Path(__file__).resolve().parent / "assets"
@@ -33,8 +36,7 @@ PIPELINE_STATUS_STYLES = {
 
 
 def _select_stage(stage: PipelineStage) -> None:
-    st.session_state["operational_detail_source"] = stage.display_name
-    st.rerun()
+    select_pipeline_stage(st.session_state, stage.display_name)
 
 
 def _render_product_icon(
@@ -63,13 +65,14 @@ def _render_product_stage_card(
         vertical_alignment="center",
         gap="medium",
     )
-    if card.button(
+    card.button(
         stage.display_name,
         key=f"pipeline-stage-{stage.identifier}",
         type="tertiary",
         width="content",
-    ):
-        _select_stage(stage)
+        on_click=_select_stage,
+        args=(stage,),
+    )
 
     _render_product_icon(card, icon_path, width=64)
 

@@ -139,8 +139,9 @@ The deterministic defaults are:
 - 45 seconds while the latest known run is idle
 
 Manual refresh marks the same shared observation immediately due and performs
-a fragment-scoped rerun. Viewer filter and selected pipeline context remain in
-Streamlit session state and are not reset by automatic refresh.
+one complete dashboard rerun so every monitoring consumer observes the new
+cycle. Viewer filter and selected pipeline context remain in Streamlit session
+state and are not reset by automatic refresh.
 
 Refresh scheduling is presentation state and never creates Operational
 Events. Pipeline stages change only from provider evidence; no simulated
@@ -149,6 +150,32 @@ progression, artificial delay, or animation exists.
 When a retrieval attempt raises an error, the last successful observation is
 retained with its timestamp and the monitoring status reports the retry
 schedule. Provider failures remain isolated from the complete dashboard.
+
+### Development Refresh Mode and Viewer Synchronization
+
+The global `Live Refresh` control changes scheduling only:
+
+- **ON** preserves adaptive provider polling, the countdown, and periodic
+  fragment reruns.
+- **OFF** removes periodic fragment scheduling and ignores elapsed refresh
+  deadlines during ordinary UI reruns. The current snapshot remains visible.
+  `Refresh now` still requests exactly one complete monitoring cycle.
+
+`PipelineRun.current_stage` is the authoritative Active Pipeline Stage. While
+the Viewer is in live-follow mode, this stage updates the existing
+`operational_detail_source` selection; Operational Events are not inspected to
+infer activity.
+
+Every pipeline tile writes to that same selection. Clicking a tile or choosing
+an individual Viewer source enables a small manual-override flag, preventing
+later monitoring refreshes from replacing the user's choice. Selecting `All`
+clears the override and immediately returns the Viewer to the current Active
+Pipeline Stage. No second stage-selection value or separate routing model is
+maintained.
+
+The selected tile and Operational Detail Viewer retain their shared contextual
+accent. This interaction uses Streamlit buttons, session state, selectbox
+callbacks, and fragments only.
 
 ## Incremental Architecture Principles
 

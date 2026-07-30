@@ -8,10 +8,11 @@ from dashboard.layout import (
     render_page_header,
 )
 from dashboard.monitoring import (
-    DEFAULT_REFRESH_POLICY,
     MONITORING_STATE_KEY,
     MonitoringState,
+    automatic_refresh_interval,
     ensure_monitoring_state,
+    render_live_refresh_control,
     render_monitoring_status,
     request_monitoring_refresh,
 )
@@ -21,6 +22,7 @@ from dashboard.operational_detail_viewer import (
 )
 from dashboard.overview_cards import render_platform_cards, render_summary_cards
 from dashboard.pipeline import render_delivery_pipeline
+from dashboard.pipeline_context import synchronize_active_pipeline_stage
 
 st.set_page_config(
     page_title="M-DevOps Dashboard",
@@ -30,24 +32,38 @@ st.set_page_config(
 render_dashboard_styles()
 
 selected_page = render_navigation(show_refresh_control=False)
+live_refresh = render_live_refresh_control()
+fragment_interval = automatic_refresh_interval(live_refresh)
 
 
-@st.fragment(run_every=DEFAULT_REFRESH_POLICY.countdown_seconds)
+@st.fragment(run_every=fragment_interval)
 def render_pipeline_monitoring_fragment() -> MonitoringState:
     """Refresh and render only the shared live-monitoring pipeline area."""
-    monitoring_state = ensure_monitoring_state()
+    monitoring_state = ensure_monitoring_state(automatic=live_refresh)
+    synchronize_active_pipeline_stage(
+        st.session_state,
+        monitoring_state.pipeline_run,
+    )
+    render_dashboard_styles()
     with st.container(border=True):
-        if render_monitoring_status(monitoring_state):
+        if render_monitoring_status(
+            monitoring_state,
+            automatic=live_refresh,
+        ):
             request_monitoring_refresh()
-            st.rerun(scope="fragment")
+            st.rerun()
         render_delivery_pipeline(monitoring_state.pipeline_run)
     return monitoring_state
 
 
-@st.fragment(run_every=DEFAULT_REFRESH_POLICY.countdown_seconds)
+@st.fragment(run_every=fragment_interval)
 def render_operational_monitoring_fragment() -> None:
     """Render the viewer from the same scheduled monitoring observation."""
-    monitoring_state = ensure_monitoring_state()
+    monitoring_state = ensure_monitoring_state(automatic=live_refresh)
+    synchronize_active_pipeline_stage(
+        st.session_state,
+        monitoring_state.pipeline_run,
+    )
     render_operational_detail_viewer(
         monitoring_state.snapshot,
         monitoring_state.pipeline_run,

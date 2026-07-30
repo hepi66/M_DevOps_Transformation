@@ -362,6 +362,80 @@ def test_no_provider_retrieval_occurs_before_refresh_is_due(monkeypatch):
     assert session_state["operational_detail_source"] == "CI"
 
 
+def test_live_refresh_modes_control_fragment_scheduling():
+    assert monitoring.automatic_refresh_interval(True) == 1
+    assert monitoring.automatic_refresh_interval(False) is None
+
+
+def test_live_refresh_off_preserves_due_monitoring_state(monkeypatch):
+    pipeline_run = aggregate_pipeline_run(_workflow_snapshot())
+    current = monitoring.MonitoringState(
+        snapshot=_workflow_snapshot(),
+        pipeline_run=pipeline_run,
+        last_attempt=NOW,
+        last_success=NOW,
+        next_refresh=NOW,
+    )
+    session_state = {monitoring.MONITORING_STATE_KEY: current}
+    refresh = Mock()
+    monkeypatch.setattr(monitoring.st, "session_state", session_state)
+    monkeypatch.setattr(monitoring, "refresh_monitoring_state", refresh)
+
+    result = monitoring.ensure_monitoring_state(
+        now=NOW + timedelta(seconds=60),
+        automatic=False,
+    )
+
+    assert result is current
+    refresh.assert_not_called()
+
+
+def test_manual_refresh_performs_one_cycle_while_live_refresh_is_off(
+    monkeypatch,
+):
+    pipeline_run = aggregate_pipeline_run(_workflow_snapshot())
+    current = monitoring.MonitoringState(
+        snapshot=_workflow_snapshot(),
+        pipeline_run=pipeline_run,
+        last_attempt=NOW,
+        last_success=NOW,
+        next_refresh=NOW + timedelta(seconds=20),
+    )
+    refreshed = monitoring.MonitoringState(
+        snapshot=current.snapshot,
+        pipeline_run=current.pipeline_run,
+        last_attempt=NOW + timedelta(seconds=1),
+        last_success=NOW + timedelta(seconds=1),
+        next_refresh=NOW + timedelta(seconds=21),
+    )
+    session_state = {monitoring.MONITORING_STATE_KEY: current}
+    refresh = Mock(return_value=refreshed)
+    monkeypatch.setattr(monitoring.st, "session_state", session_state)
+    monkeypatch.setattr(monitoring, "refresh_monitoring_state", refresh)
+
+    monitoring.request_monitoring_refresh(now=NOW)
+    result = monitoring.ensure_monitoring_state(
+        now=NOW + timedelta(seconds=1),
+        automatic=False,
+    )
+
+    assert result is refreshed
+    refresh.assert_called_once()
+    assert session_state[monitoring.FORCE_REFRESH_KEY] is False
+
+
+def test_live_refresh_control_displays_explicit_off_mode(monkeypatch):
+    sidebar = Mock()
+    sidebar.toggle.return_value = False
+    monkeypatch.setattr(monitoring.st, "sidebar", sidebar)
+    monkeypatch.setattr(monitoring.st, "session_state", {})
+
+    enabled = monitoring.render_live_refresh_control()
+
+    assert enabled is False
+    sidebar.caption.assert_called_once_with("OFF · Manual refresh only")
+
+
 def test_manual_refresh_resets_schedule_without_changing_viewer_filter(monkeypatch):
     pipeline_run = aggregate_pipeline_run(_workflow_snapshot())
     current = monitoring.MonitoringState(
