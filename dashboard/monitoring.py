@@ -54,6 +54,55 @@ class MonitoringState:
     next_refresh: datetime
     retrieval_failed: bool = False
     retrieval_error: str | None = None
+    ghcr_stability_cycles_remaining: int = 1
+
+
+def _same_pipeline_execution(
+    previous: PipelineRun,
+    current: PipelineRun,
+) -> bool:
+    """Return whether two observations describe the same immutable CI run."""
+    return bool(
+        previous.commit_sha
+        and previous.commit_sha == current.commit_sha
+        and previous.workflow_run_id
+        and previous.workflow_run_id == current.workflow_run_id
+    )
+
+
+def _stabilize_transient_ghcr_evidence(
+    snapshot: dict,
+    pipeline_run: PipelineRun,
+    previous: MonitoringState | None,
+) -> tuple[dict, int]:
+    """Retain one last correlated GHCR observation for one transient cycle."""
+    ghcr_stage = pipeline_run.stage("ghcr")
+    if ghcr_stage and ghcr_stage.status == "Completed":
+        return snapshot, 1
+
+    if previous is None or previous.ghcr_stability_cycles_remaining <= 0:
+        return snapshot, 0
+
+    previous_stage = previous.pipeline_run.stage("ghcr")
+    if (
+        previous_stage is None
+        or previous_stage.status != "Completed"
+        or ghcr_stage is None
+        or ghcr_stage.status not in {"Unknown", "Unavailable"}
+        or not _same_pipeline_execution(previous.pipeline_run, pipeline_run)
+        or pipeline_run.ghcr.status == "failed"
+        or pipeline_run.ghcr.availability
+        in {"missing", "authentication_unavailable"}
+    ):
+        return snapshot, 0
+
+    previous_ghcr = previous.snapshot.get("ghcr")
+    if not isinstance(previous_ghcr, dict):
+        return snapshot, 0
+
+    stabilized = dict(snapshot)
+    stabilized["ghcr"] = dict(previous_ghcr)
+    return stabilized, previous.ghcr_stability_cycles_remaining - 1
 
 
 def refresh_interval_for(
@@ -98,6 +147,18 @@ def refresh_monitoring_state(
             argocd_observation=argocd,
             kubernetes_observation=kubernetes,
         )
+        retrieved_snapshot = snapshot
+        snapshot, ghcr_stability_cycles = _stabilize_transient_ghcr_evidence(
+            snapshot,
+            provisional_run,
+            previous,
+        )
+        if snapshot is not retrieved_snapshot:
+            provisional_run = aggregate_pipeline_run(
+                snapshot,
+                argocd_observation=argocd,
+                kubernetes_observation=kubernetes,
+            )
         interval = refresh_interval_for(
             provisional_run,
             policy=policy,
@@ -114,6 +175,7 @@ def refresh_monitoring_state(
             last_attempt=attempted_at,
             last_success=completed_at,
             next_refresh=completed_at + timedelta(seconds=interval),
+            ghcr_stability_cycles_remaining=ghcr_stability_cycles,
         )
     except Exception as error:  # noqa: BLE001 - preserve last safe observation
         interval = policy.unavailable_seconds
@@ -127,6 +189,9 @@ def refresh_monitoring_state(
                 retrieval_failed=True,
                 retrieval_error=(
                     f"Live data retrieval failed: {type(error).__name__}."
+                ),
+                ghcr_stability_cycles_remaining=(
+                    previous.ghcr_stability_cycles_remaining
                 ),
             )
 
@@ -149,6 +214,7 @@ def refresh_monitoring_state(
             retrieval_error=(
                 f"Live data retrieval failed: {type(error).__name__}."
             ),
+            ghcr_stability_cycles_remaining=0,
         )
 
 
@@ -225,6 +291,9 @@ def request_monitoring_refresh(
             next_refresh=current_time,
             retrieval_failed=current.retrieval_failed,
             retrieval_error=current.retrieval_error,
+            ghcr_stability_cycles_remaining=(
+                current.ghcr_stability_cycles_remaining
+            ),
         )
 
 

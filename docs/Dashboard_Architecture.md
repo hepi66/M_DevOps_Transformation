@@ -168,14 +168,29 @@ infer activity.
 
 Every pipeline tile writes to that same selection. Clicking a tile or choosing
 an individual Viewer source enables a small manual-override flag, preventing
-later monitoring refreshes from replacing the user's choice. Selecting `All`
-clears the override and immediately returns the Viewer to the current Active
-Pipeline Stage. No second stage-selection value or separate routing model is
-maintained.
+later monitoring refreshes from replacing the user's choice. `All` means
+**Return to Live**: its Viewer callback clears the override and immediately
+resolves the selection from the current shared `PipelineRun.current_stage`.
+The next Viewer render therefore resumes automatic following without waiting
+for another provider refresh. The internal pipeline context and the Streamlit
+selectbox use separate session keys so automatic synchronization never mutates
+an already-instantiated widget.
 
-The selected tile and Operational Detail Viewer retain their shared contextual
-accent. This interaction uses Streamlit buttons, session state, selectbox
-callbacks, and fragments only.
+The selected tile and Operational Detail Viewer use the contextual accent
+defined for that stage in the authoritative operational-source vocabulary.
+The same centralized color is used for the selected tile, Viewer border, and
+matching event-source identifier. This interaction uses Streamlit buttons,
+session state, selectbox callbacks, and fragments only.
+
+GHCR presentation uses a bounded one-refresh stability window. When the same
+commit and workflow run were already correlated successfully, one immediately
+following observation may retain that verified GHCR evidence if registry
+availability or tag correlation is transiently incomplete. The grace is
+consumed after one cycle and is reset only by fresh correlated evidence.
+Different workflow runs, authentication or package-missing states, and
+explicit GHCR failures bypass the grace and appear immediately. This avoids
+normal provider-timing flicker without weakening identifier correlation or
+retaining stale evidence indefinitely.
 
 ## Incremental Architecture Principles
 

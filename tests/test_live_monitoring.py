@@ -474,3 +474,146 @@ def test_refresh_mechanics_do_not_create_operational_events():
 
     assert "Refresh" not in monitoring.monitoring_status_text(state, now=NOW)
     assert "events" not in vars(state)
+
+
+def _unavailable_cluster_observations():
+    return (
+        ArgoCDProviderData(
+            availability="unavailable",
+            status="unavailable",
+        ),
+        KubernetesProviderData(
+            availability="unavailable",
+            status="unavailable",
+        ),
+    )
+
+
+def test_one_transient_ghcr_correlation_gap_preserves_completed_presentation():
+    correlated_snapshot = _workflow_snapshot()
+    previous = monitoring.refresh_monitoring_state(
+        now=NOW,
+        snapshot_loader=Mock(return_value=correlated_snapshot),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+    interrupted_snapshot = _workflow_snapshot()
+    interrupted_snapshot["ghcr"]["tags"] = ["latest"]
+    interrupted_snapshot["ghcr"]["latest_tag"] = "latest"
+
+    stabilized = monitoring.refresh_monitoring_state(
+        previous,
+        now=NOW + timedelta(seconds=7),
+        snapshot_loader=Mock(return_value=interrupted_snapshot),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+
+    assert stabilized.pipeline_run.stage("ghcr").status == "Completed"
+    assert stabilized.ghcr_stability_cycles_remaining == 0
+
+
+def test_repeated_uncorrelated_ghcr_snapshot_consumes_bounded_grace():
+    correlated_snapshot = _workflow_snapshot()
+    first = monitoring.refresh_monitoring_state(
+        now=NOW,
+        snapshot_loader=Mock(return_value=correlated_snapshot),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+    uncorrelated_snapshot = _workflow_snapshot()
+    uncorrelated_snapshot["ghcr"]["tags"] = ["latest"]
+    uncorrelated_snapshot["ghcr"]["latest_tag"] = "latest"
+    second = monitoring.refresh_monitoring_state(
+        first,
+        now=NOW + timedelta(seconds=7),
+        snapshot_loader=Mock(return_value=uncorrelated_snapshot),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+
+    third = monitoring.refresh_monitoring_state(
+        second,
+        now=NOW + timedelta(seconds=14),
+        snapshot_loader=Mock(return_value=uncorrelated_snapshot),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+
+    assert second.pipeline_run.stage("ghcr").status == "Completed"
+    assert third.pipeline_run.stage("ghcr").status == "Unknown"
+
+
+def test_transient_ghcr_unavailability_is_stabilized_once():
+    first = monitoring.refresh_monitoring_state(
+        now=NOW,
+        snapshot_loader=Mock(return_value=_workflow_snapshot()),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+    unavailable_snapshot = _workflow_snapshot()
+    unavailable_snapshot["ghcr"] = {
+        "availability": "unavailable",
+        "reason": "Temporary registry response unavailable.",
+    }
+
+    second = monitoring.refresh_monitoring_state(
+        first,
+        now=NOW + timedelta(seconds=7),
+        snapshot_loader=Mock(return_value=unavailable_snapshot),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+
+    assert second.pipeline_run.stage("ghcr").status == "Completed"
+    assert second.ghcr_stability_cycles_remaining == 0
+
+
+def test_real_ghcr_failure_is_never_stabilized():
+    first = monitoring.refresh_monitoring_state(
+        now=NOW,
+        snapshot_loader=Mock(return_value=_workflow_snapshot()),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+    failed_snapshot = _workflow_snapshot()
+    failed_snapshot["ghcr"] = {
+        "availability": "available",
+        "status": "failed",
+        "tags": ["latest"],
+    }
+
+    failed = monitoring.refresh_monitoring_state(
+        first,
+        now=NOW + timedelta(seconds=7),
+        snapshot_loader=Mock(return_value=failed_snapshot),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+
+    assert failed.pipeline_run.stage("ghcr").status == "Failed"
+
+
+def test_new_workflow_run_never_reuses_previous_ghcr_correlation():
+    first = monitoring.refresh_monitoring_state(
+        now=NOW,
+        snapshot_loader=Mock(return_value=_workflow_snapshot()),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+    new_run_snapshot = _workflow_snapshot()
+    workflow = new_run_snapshot["github_actions"]["workflow"]
+    workflow["databaseId"] = 86
+    workflow["number"] = 86
+    workflow["headSha"] = "b" * 40
+    new_run_snapshot["ghcr"]["tags"] = ["latest"]
+
+    new_run = monitoring.refresh_monitoring_state(
+        first,
+        now=NOW + timedelta(seconds=7),
+        snapshot_loader=Mock(return_value=new_run_snapshot),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+
+    assert new_run.pipeline_run.stage("ghcr").status == "Unknown"
