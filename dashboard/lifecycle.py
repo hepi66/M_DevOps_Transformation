@@ -307,17 +307,28 @@ def normalize_ghcr_provider(snapshot: dict[str, Any]) -> GHCRProviderData:
     raw = snapshot.get("ghcr")
     raw = raw if isinstance(raw, dict) else {}
     availability = _availability(raw.get("availability"))
-    status: LifecycleStatus = (
-        "completed"
-        if availability == "available"
-        else "unavailable"
-        if availability in {
-            "missing",
-            "unavailable",
-            "authentication_unavailable",
-        }
-        else "unknown"
-    )
+    explicit_status = str(raw.get("status") or "").lower()
+    status: LifecycleStatus
+    if explicit_status in {
+        "completed",
+        "running",
+        "queued",
+        "failed",
+        "cancelled",
+        "unavailable",
+        "unknown",
+    }:
+        status = explicit_status  # type: ignore[assignment]
+    elif availability == "available":
+        status = "completed"
+    elif availability in {
+        "missing",
+        "unavailable",
+        "authentication_unavailable",
+    }:
+        status = "unavailable"
+    else:
+        status = "unknown"
     raw_tags = raw.get("tags")
     tags = (
         tuple(str(tag) for tag in raw_tags if tag)
@@ -471,8 +482,8 @@ def _docker_stage(snapshot: dict[str, Any]) -> PipelineStageState:
         status = _workflow_status(job.get("status"), job.get("conclusion"))
     label = {
         "completed": "Completed",
-        "running": "Active",
-        "queued": "Active",
+        "running": "Running",
+        "queued": "Running",
         "failed": "Failed",
         "cancelled": "Failed",
     }.get(status, "Unknown")
@@ -490,6 +501,73 @@ def _docker_stage(snapshot: dict[str, Any]) -> PipelineStageState:
     )
 
 
+def _ghcr_publication_status(
+    snapshot: dict[str, Any],
+    ghcr: GHCRProviderData,
+    *,
+    github_evidence: bool,
+    image_correlated: bool,
+) -> LifecycleStatus:
+    """Map only correlated registry or current publish-step evidence."""
+    if image_correlated:
+        return "completed"
+
+    docker_build = snapshot.get("docker_build")
+    docker_build = docker_build if isinstance(docker_build, dict) else {}
+    step = docker_build.get("step")
+    step = step if isinstance(step, dict) else {}
+    step_name = str(step.get("name") or "").lower()
+    publish_step = "push" in step_name or "publish" in step_name
+    if github_evidence and publish_step:
+        step_status = _workflow_status(
+            step.get("status"),
+            step.get("conclusion"),
+        )
+        if step_status in {"running", "queued"}:
+            return "running"
+        if step_status in {"failed", "cancelled"}:
+            return "failed"
+
+    if ghcr.status == "failed":
+        return "failed"
+    if ghcr.availability in {
+        "missing",
+        "unavailable",
+        "authentication_unavailable",
+    }:
+        return "unavailable"
+    return "unknown"
+
+
+def _provider_unavailable_stage(
+    identifier: str,
+    provider: ArgoCDProviderData | KubernetesProviderData,
+) -> PipelineStageState:
+    reason = provider.reason or "Provider unavailable."
+    details = (
+        "Unavailable locally"
+        if reason.startswith("In-cluster Kubernetes configuration")
+        else "Provider unavailable"
+    )
+    return PipelineStageState(
+        identifier,
+        "Unavailable",
+        "LIVE",
+        provider.observed_at,
+        details,
+    )
+
+
+def _provider_is_unavailable(
+    provider: ArgoCDProviderData | KubernetesProviderData,
+) -> bool:
+    return provider.availability in {
+        "missing",
+        "unavailable",
+        "authentication_unavailable",
+    }
+
+
 def _stage_mapping(
     snapshot: dict[str, Any],
     github: GitHubProviderData,
@@ -504,49 +582,61 @@ def _stage_mapping(
     runtime_correlated: bool,
 ) -> tuple[PipelineStageState, ...]:
     if not run_detected:
-        return tuple(
-            PipelineStageState(
-                identifier,
-                "Unknown",
-                source,
-            )
-            for identifier, source in (
-                ("code", "LOCAL"),
-                ("github", "LIVE"),
-                ("ci", "LIVE"),
-                ("build", "LIVE"),
-                ("ghcr", "LIVE"),
-                ("argocd", "LIVE"),
-                ("kubernetes", "LIVE"),
-            )
+        return (
+            PipelineStageState("code", "Unknown", "LOCAL"),
+            PipelineStageState("github", "Unknown", "LIVE"),
+            PipelineStageState("ci", "Unknown", "LIVE"),
+            PipelineStageState("build", "Unknown", "LIVE"),
+            PipelineStageState("ghcr", "Unknown", "LIVE"),
+            (
+                _provider_unavailable_stage("argocd", argocd)
+                if _provider_is_unavailable(argocd)
+                else PipelineStageState("argocd", "Unknown", "LIVE")
+            ),
+            (
+                _provider_unavailable_stage("kubernetes", kubernetes)
+                if _provider_is_unavailable(kubernetes)
+                else PipelineStageState("kubernetes", "Unknown", "LIVE")
+            ),
         )
 
     ci_status = (
         {
-            "completed": "Success",
+            "completed": "Completed",
             "running": "Running",
-            "queued": "Queued",
+            "queued": "Running",
             "failed": "Failed",
-            "cancelled": "Cancelled",
+            "cancelled": "Failed",
         }.get(github.status, "Unknown")
         if github_evidence
         else "Unknown"
     )
-    ghcr_status = (
-        "Image published"
-        if image_correlated
-        else "Failed"
-        if ghcr.status == "failed"
-        else "Unknown"
+    ghcr_status = {
+        "completed": "Completed",
+        "running": "Running",
+        "queued": "Running",
+        "failed": "Failed",
+        "cancelled": "Failed",
+        "unavailable": "Unavailable",
+    }.get(
+        _ghcr_publication_status(
+            snapshot,
+            ghcr,
+            github_evidence=github_evidence,
+            image_correlated=image_correlated,
+        ),
+        "Unknown",
     )
 
     argocd_stage = PipelineStageState("argocd", "Unknown", "LIVE")
-    if deployment_correlated:
+    if _provider_is_unavailable(argocd):
+        argocd_stage = _provider_unavailable_stage("argocd", argocd)
+    elif deployment_correlated:
         argocd_stage = PipelineStageState(
             "argocd",
             {
                 "completed": "Completed",
-                "running": "Active",
+                "running": "Running",
                 "failed": "Failed",
             }.get(argocd.status, "Unknown"),
             "LIVE",
@@ -555,12 +645,17 @@ def _stage_mapping(
         )
 
     kubernetes_stage = PipelineStageState("kubernetes", "Unknown", "LIVE")
-    if runtime_correlated:
+    if _provider_is_unavailable(kubernetes):
+        kubernetes_stage = _provider_unavailable_stage(
+            "kubernetes",
+            kubernetes,
+        )
+    elif runtime_correlated:
         kubernetes_stage = PipelineStageState(
             "kubernetes",
             {
                 "completed": "Completed",
-                "running": "Active",
+                "running": "Running",
                 "failed": "Failed",
             }.get(kubernetes.status, "Unknown"),
             "LIVE",
@@ -641,14 +736,23 @@ def aggregate_pipeline_run(
     github_evidence = bool(
         github.commit_sha and github.workflow_run_id
     )
-    image_correlated = bool(
+    tag_correlated = bool(
         commit_sha
         and any(_tag_matches_commit(tag, commit_sha) for tag in ghcr.tags)
     )
+    digest_correlated = bool(
+        commit_sha
+        and ghcr.digest
+        and kubernetes.image_digest
+        and ghcr.digest == kubernetes.image_digest
+        and kubernetes.image_tag
+        and _tag_matches_commit(kubernetes.image_tag, commit_sha)
+    )
+    image_correlated = tag_correlated or digest_correlated
     image_tag = (
         next(
             (tag for tag in ghcr.tags if _tag_matches_commit(tag, commit_sha or "")),
-            None,
+            kubernetes.image_tag if digest_correlated else None,
         )
         if image_correlated
         else None
@@ -692,13 +796,13 @@ def aggregate_pipeline_run(
     completed_stages = tuple(
         stage.identifier
         for stage in stages
-        if stage.status in {"Completed", "Success", "Image published"}
+        if stage.status == "Completed"
     )
     active_stage = next(
         (
             stage.identifier
             for stage in stages
-            if stage.status in {"Active", "Running", "Queued"}
+            if stage.status == "Running"
         ),
         None,
     )

@@ -90,6 +90,36 @@ Missing or conflicting identifiers produce an `unknown` or `partial`
 correlation result. The aggregator never guesses a relationship from timing,
 names, or ordering alone.
 
+### Pipeline Status and Operational Sources
+
+Pipeline tiles use one evidence-based status vocabulary: `COMPLETED`,
+`RUNNING`, `FAILED`, `UNKNOWN`, and `UNAVAILABLE`. `UNKNOWN` means that
+lifecycle evidence is missing, conflicting, or cannot be correlated.
+`UNAVAILABLE` means that the responsible provider cannot currently be
+observed. During local execution, Argo CD and Kubernetes therefore report
+`UNAVAILABLE` with the concise context `Unavailable locally`; this does not
+imply a failed deployment.
+
+Operational Events use one authoritative source vocabulary:
+
+- `GI` — Git / local repository
+- `GH` — GitHub
+- `CI` — GitHub Actions / CI
+- `DB` — Docker Build
+- `CR` — GitHub Container Registry
+- `CD` — Argo CD
+- `K8` — Kubernetes
+
+The same definitions drive Viewer filtering, event labels and colors,
+pipeline context highlighting, deterministic ordering, and the footer legend.
+The `All` view is the unfiltered event collection.
+
+GHCR tile state and GHCR Operational Events are projected from the same
+correlated `PipelineRun`. Publication is completed only when the image tag
+matches the run commit, or when a digest match is anchored by a matching
+runtime image tag. A successful but unrelated CI run or a stale package alone
+does not mark GHCR completed.
+
 ### Targeted Live Monitoring
 
 Streamlit fragments refresh only the Delivery Pipeline, refresh indicator,

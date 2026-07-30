@@ -1,4 +1,6 @@
 from dashboard.lifecycle import (
+    ArgoCDProviderData,
+    KubernetesProviderData,
     aggregate_pipeline_run,
     normalize_argocd_provider,
     normalize_ghcr_provider,
@@ -141,8 +143,8 @@ def test_pipeline_stage_mapping_is_deterministic():
         "argocd",
         "kubernetes",
     )
-    assert pipeline_run.stage("ci").status == "Success"
-    assert pipeline_run.stage("ghcr").status == "Image published"
+    assert pipeline_run.stage("ci").status == "Completed"
+    assert pipeline_run.stage("ghcr").status == "Completed"
     assert pipeline_run.stage("argocd").status == "Completed"
     assert pipeline_run.stage("kubernetes").status == "Completed"
 
@@ -162,6 +164,81 @@ def test_unknown_correlation_does_not_guess_deployment_identity():
     assert pipeline_run.deployment_revision is None
     assert pipeline_run.deployment_namespace is None
     assert pipeline_run.pod_information == ()
+
+
+def test_ghcr_stage_maps_correlated_publication_evidence_to_completed():
+    pipeline_run = aggregate_pipeline_run(_complete_snapshot())
+
+    assert pipeline_run.stage("ghcr").status == "Completed"
+
+
+def test_ghcr_stage_maps_current_publish_step_to_running():
+    snapshot = _complete_snapshot()
+    snapshot["ghcr"]["tags"] = ["latest"]
+    snapshot["docker_build"]["step"].update(
+        status="in_progress",
+        conclusion=None,
+    )
+
+    pipeline_run = aggregate_pipeline_run(snapshot)
+
+    assert pipeline_run.stage("ghcr").status == "Running"
+
+
+def test_ghcr_stage_maps_failed_publish_step_to_failed():
+    snapshot = _complete_snapshot()
+    snapshot["ghcr"]["tags"] = ["latest"]
+    snapshot["docker_build"]["step"].update(
+        status="completed",
+        conclusion="failure",
+    )
+
+    pipeline_run = aggregate_pipeline_run(snapshot)
+
+    assert pipeline_run.stage("ghcr").status == "Failed"
+
+
+def test_ghcr_stage_keeps_stale_uncorrelated_image_unknown():
+    snapshot = _complete_snapshot()
+    snapshot["ghcr"]["tags"] = ["latest", "abcdef0123456789"]
+
+    pipeline_run = aggregate_pipeline_run(snapshot)
+
+    assert pipeline_run.stage("ghcr").status == "Unknown"
+    assert pipeline_run.image_digest is None
+
+
+def test_ghcr_digest_correlation_requires_commit_correlated_runtime():
+    snapshot = _complete_snapshot()
+    snapshot["ghcr"]["tags"] = ["latest"]
+    snapshot["kubernetes"]["image_digest"] = snapshot["ghcr"]["digest"]
+
+    pipeline_run = aggregate_pipeline_run(snapshot)
+
+    assert pipeline_run.stage("ghcr").status == "Completed"
+    assert pipeline_run.image_tag == COMMIT_SHA
+
+
+def test_local_cluster_unavailability_is_distinct_from_unknown():
+    reason = "In-cluster Kubernetes configuration is not available."
+    pipeline_run = aggregate_pipeline_run(
+        _complete_snapshot(),
+        argocd_observation=ArgoCDProviderData(
+            availability="unavailable",
+            status="unavailable",
+            reason=reason,
+        ),
+        kubernetes_observation=KubernetesProviderData(
+            availability="unavailable",
+            status="unavailable",
+            reason=reason,
+        ),
+    )
+
+    assert pipeline_run.stage("argocd").status == "Unavailable"
+    assert pipeline_run.stage("argocd").details == "Unavailable locally"
+    assert pipeline_run.stage("kubernetes").status == "Unavailable"
+    assert pipeline_run.stage("kubernetes").details == "Unavailable locally"
 
 
 def test_missing_providers_produce_stable_unknown_fallback():

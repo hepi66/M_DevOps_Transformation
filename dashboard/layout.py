@@ -6,6 +6,7 @@ from pathlib import Path
 import streamlit as st
 
 from dashboard.pipeline_context import (
+    OPERATIONAL_SOURCES,
     PIPELINE_STAGE_CONTEXT_COLORS,
     pipeline_stage_context_color,
     selected_pipeline_stage,
@@ -73,14 +74,9 @@ def _resolve_build_information() -> str:
 
 
 BUILD_INFORMATION = _resolve_build_information()
-OPERATIONAL_SOURCE_LEGEND = (
-    ("GI", "Git"),
-    ("GH", "GitHub"),
-    ("CI", "CI/CD"),
-    ("DB", "Docker Build"),
-    ("CR", "GHCR"),
-    ("CD", "Argo CD"),
-    ("K8", "Kubernetes"),
+OPERATIONAL_SOURCE_LEGEND = tuple(
+    (source, definition["label"])
+    for source, definition in OPERATIONAL_SOURCES.items()
 )
 
 
@@ -136,10 +132,16 @@ def render_dashboard_styles() -> None:
 .stHeading h3 {{
     font-size: 1.5rem;
 }}
-.st-key-pipeline-stage-card-ci .stMarkdownBadge,
-.st-key-pipeline-stage-card-ci-selected .stMarkdownBadge {{
+.st-key-delivery-pipeline-grid .stMarkdownBadge {{
     padding-inline: 0.25rem !important;
-    font-size: 0.7rem !important;
+    font-size: 0.875rem !important;
+    line-height: 1.2 !important;
+    width: max-content !important;
+    max-width: none !important;
+}}
+.st-key-delivery-pipeline-grid p:has(.stMarkdownBadge) {{
+    width: max-content !important;
+    max-width: none !important;
 }}
 .st-key-delivery-pipeline-grid
 > [data-testid="stLayoutWrapper"]

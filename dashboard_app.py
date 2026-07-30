@@ -48,7 +48,10 @@ def render_pipeline_monitoring_fragment() -> MonitoringState:
 def render_operational_monitoring_fragment() -> None:
     """Render the viewer from the same scheduled monitoring observation."""
     monitoring_state = ensure_monitoring_state()
-    render_operational_detail_viewer(monitoring_state.snapshot)
+    render_operational_detail_viewer(
+        monitoring_state.snapshot,
+        monitoring_state.pipeline_run,
+    )
 
 if selected_page == "overview":
     render_page_header(

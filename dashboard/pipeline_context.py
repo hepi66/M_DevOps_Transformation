@@ -1,6 +1,55 @@
 from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
-from dashboard.operational_events import OperationalEvent
+if TYPE_CHECKING:
+    from dashboard.operational_events import OperationalEvent
+
+# Authoritative operational source vocabulary. Its insertion order is the
+# deterministic lifecycle order used by the Viewer and footer.
+OPERATIONAL_SOURCES = {
+    "GI": {
+        "stage": "Code",
+        "identifier": "code",
+        "label": "Git",
+        "color": "#F7E263",
+    },
+    "GH": {
+        "stage": "GitHub",
+        "identifier": "github",
+        "label": "GitHub",
+        "color": "#8B5CF6",
+    },
+    "CI": {
+        "stage": "CI",
+        "identifier": "ci",
+        "label": "CI/CD",
+        "color": "#D946EF",
+    },
+    "DB": {
+        "stage": "Build",
+        "identifier": "build",
+        "label": "Docker Build",
+        "color": "#06B6D4",
+    },
+    "CR": {
+        "stage": "GHCR",
+        "identifier": "ghcr",
+        "label": "GHCR",
+        "color": "#F59E0B",
+    },
+    "CD": {
+        "stage": "Argo CD",
+        "identifier": "argocd",
+        "label": "Argo CD",
+        "color": "#F97360",
+    },
+    "K8": {
+        "stage": "Kubernetes",
+        "identifier": "kubernetes",
+        "label": "Kubernetes",
+        "color": "#73B0E7",
+    },
+}
 
 PIPELINE_STAGE_FILTERS = (
     "All",
@@ -22,13 +71,8 @@ PIPELINE_STAGE_IDENTIFIERS = {
     "Kubernetes": "kubernetes",
 }
 PIPELINE_STAGE_CONTEXT_COLORS = {
-    "code": "#F7E263",
-    "github": "#8B5CF6",
-    "ci": "#D946EF",
-    "build": "#06B6D4",
-    "ghcr": "#F59E0B",
-    "argocd": "#F97360",
-    "kubernetes": "#73B0E7",
+    definition["identifier"]: definition["color"]
+    for definition in OPERATIONAL_SOURCES.values()
 }
 LEGACY_FILTER_STAGES = {
     "Git / Local Repository": "Code",
@@ -36,13 +80,8 @@ LEGACY_FILTER_STAGES = {
     "Docker Build": "Build",
 }
 EVENT_SOURCE_STAGES = {
-    "GI": "Code",
-    "GH": "GitHub",
-    "CI": "CI",
-    "DB": "Build",
-    "CR": "GHCR",
-    "CD": "Argo CD",
-    "K8": "Kubernetes",
+    source: definition["stage"]
+    for source, definition in OPERATIONAL_SOURCES.items()
 }
 PIPELINE_STAGE_SOURCES = {
     stage: source for source, stage in EVENT_SOURCE_STAGES.items()
@@ -83,7 +122,7 @@ def pipeline_source_context_color(source: str | None) -> str:
     return pipeline_stage_context_color(EVENT_SOURCE_STAGES.get(str(source)))
 
 
-def event_pipeline_stage(event: OperationalEvent) -> str | None:
+def event_pipeline_stage(event: "OperationalEvent") -> str | None:
     """Associate a normalized operational source with its pipeline stage."""
     return EVENT_SOURCE_STAGES.get(event.source_abbreviation)
 
