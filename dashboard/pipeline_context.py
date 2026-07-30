@@ -94,6 +94,8 @@ PIPELINE_IDENTIFIER_STAGES = {
     for stage, identifier in PIPELINE_STAGE_IDENTIFIERS.items()
 }
 PIPELINE_SELECTION_OVERRIDE_KEY = "pipeline_selection_manual"
+PIPELINE_CONTEXT_SELECTION_KEY = "operational_detail_source"
+OPERATIONAL_DETAIL_WIDGET_KEY = "operational_detail_source_widget"
 
 
 def normalize_pipeline_filter(selection: object) -> str:
@@ -107,7 +109,7 @@ def selected_pipeline_stage(
 ) -> str | None:
     """Return an explicitly selected stage identifier, if one exists."""
     selection = normalize_pipeline_filter(
-        session_state.get("operational_detail_source", "All")
+        session_state.get(PIPELINE_CONTEXT_SELECTION_KEY, "All")
     )
     return PIPELINE_STAGE_IDENTIFIERS.get(selection)
 
@@ -118,7 +120,7 @@ def select_pipeline_stage(
 ) -> None:
     """Record one explicit stage selection without duplicating its value."""
     normalized_stage = normalize_pipeline_filter(stage)
-    session_state["operational_detail_source"] = normalized_stage
+    session_state[PIPELINE_CONTEXT_SELECTION_KEY] = normalized_stage
     session_state[PIPELINE_SELECTION_OVERRIDE_KEY] = (
         normalized_stage != "All"
     )
@@ -130,7 +132,7 @@ def synchronize_active_pipeline_stage(
 ) -> str:
     """Follow PipelineRun unless the user has explicitly selected a stage."""
     selection = normalize_pipeline_filter(
-        session_state.get("operational_detail_source", "All")
+        session_state.get(PIPELINE_CONTEXT_SELECTION_KEY, "All")
     )
     if selection == "All":
         session_state[PIPELINE_SELECTION_OVERRIDE_KEY] = False
@@ -142,7 +144,7 @@ def synchronize_active_pipeline_stage(
         pipeline_run.current_stage or ""
     )
     synchronized = active_stage or "All"
-    session_state["operational_detail_source"] = synchronized
+    session_state[PIPELINE_CONTEXT_SELECTION_KEY] = synchronized
     return synchronized
 
 

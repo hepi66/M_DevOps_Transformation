@@ -37,6 +37,7 @@ PIPELINE_STATUS_STYLES = {
 
 def _select_stage(stage: PipelineStage) -> None:
     select_pipeline_stage(st.session_state, stage.display_name)
+    st.rerun(scope="app")
 
 
 def _render_product_icon(
@@ -65,14 +66,13 @@ def _render_product_stage_card(
         vertical_alignment="center",
         gap="medium",
     )
-    card.button(
+    if card.button(
         stage.display_name,
         key=f"pipeline-stage-{stage.identifier}",
         type="tertiary",
         width="content",
-        on_click=_select_stage,
-        args=(stage,),
-    )
+    ):
+        _select_stage(stage)
 
     _render_product_icon(card, icon_path, width=64)
 
