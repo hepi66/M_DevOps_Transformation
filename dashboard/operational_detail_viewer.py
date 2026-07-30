@@ -22,6 +22,8 @@ from dashboard.operational_events import (
     order_operational_events,
 )
 from dashboard.pipeline_context import (
+    OPERATIONAL_DETAIL_WIDGET_KEY,
+    PIPELINE_CONTEXT_SELECTION_KEY,
     PIPELINE_STAGE_FILTERS,
     filter_events_for_stage,
     normalize_pipeline_filter,
@@ -2058,12 +2060,20 @@ def render_operational_detail_viewer(
     pipeline_run: PipelineRun | None = None,
 ) -> None:
     """Render compact operational details from the selected source."""
-    source_key = "operational_detail_source"
     selected_source = normalize_pipeline_filter(
-        st.session_state.get(source_key, "All")
+        st.session_state.get(PIPELINE_CONTEXT_SELECTION_KEY, "All")
     )
-    if st.session_state.get(source_key) != selected_source:
-        st.session_state[source_key] = selected_source
+    widget_source = normalize_pipeline_filter(
+        st.session_state.get(
+            OPERATIONAL_DETAIL_WIDGET_KEY,
+            selected_source,
+        )
+    )
+    if (
+        OPERATIONAL_DETAIL_WIDGET_KEY not in st.session_state
+        or widget_source != selected_source
+    ):
+        st.session_state[OPERATIONAL_DETAIL_WIDGET_KEY] = selected_source
     viewer_key = (
         "operational-detail-viewer-selected"
         if selected_source != "All"
@@ -2080,7 +2090,7 @@ def render_operational_detail_viewer(
             "Source",
             PIPELINE_STAGE_FILTERS,
             label_visibility="collapsed",
-            key=source_key,
+            key=OPERATIONAL_DETAIL_WIDGET_KEY,
             on_change=_record_viewer_selection,
         )
         _render_stage_timeline(source, runtime_snapshot, pipeline_run)
@@ -2090,5 +2100,5 @@ def _record_viewer_selection() -> None:
     """Turn a Viewer selection into an explicit override, or resume live mode."""
     select_pipeline_stage(
         st.session_state,
-        st.session_state.get("operational_detail_source", "All"),
+        st.session_state.get(OPERATIONAL_DETAIL_WIDGET_KEY, "All"),
     )

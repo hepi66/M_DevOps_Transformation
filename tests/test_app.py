@@ -24,6 +24,7 @@ from dashboard.operational_events import (
     order_operational_events,
 )
 from dashboard.pipeline_context import (
+    OPERATIONAL_DETAIL_WIDGET_KEY,
     PIPELINE_SELECTION_OVERRIDE_KEY,
     PIPELINE_STAGE_CONTEXT_COLORS,
     PIPELINE_STAGE_FILTERS,
@@ -1129,13 +1130,14 @@ def test_all_does_not_fabricate_an_active_stage():
 
 
 def test_active_pipeline_stage_drives_viewer_without_user_override():
-    state = {}
+    state = {OPERATIONAL_DETAIL_WIDGET_KEY: "GHCR"}
     pipeline_run = Mock(current_stage="build")
 
     selection = synchronize_active_pipeline_stage(state, pipeline_run)
 
     assert selection == "Build"
     assert state["operational_detail_source"] == "Build"
+    assert state[OPERATIONAL_DETAIL_WIDGET_KEY] == "GHCR"
     assert state[PIPELINE_SELECTION_OVERRIDE_KEY] is False
 
 
@@ -1167,11 +1169,12 @@ def test_all_returns_viewer_to_live_pipeline_stage():
 
 
 def test_viewer_filter_change_records_manual_override(monkeypatch):
-    session_state = {"operational_detail_source": "Argo CD"}
+    session_state = {OPERATIONAL_DETAIL_WIDGET_KEY: "Argo CD"}
     monkeypatch.setattr(viewer.st, "session_state", session_state)
 
     viewer._record_viewer_selection()
 
+    assert session_state["operational_detail_source"] == "Argo CD"
     assert session_state[PIPELINE_SELECTION_OVERRIDE_KEY] is True
 
 
@@ -1359,6 +1362,7 @@ def test_build_pipeline_interaction_selects_build_stage(monkeypatch):
         fake_streamlit.session_state[PIPELINE_SELECTION_OVERRIDE_KEY]
         is True
     )
+    fake_streamlit.rerun.assert_called_once_with(scope="app")
 
 
 def test_selected_pipeline_stage_uses_selected_card_key(monkeypatch):
@@ -1514,8 +1518,6 @@ def test_ci_pipeline_renderer_uses_badge_icon_and_existing_stage(monkeypatch):
         key="pipeline-stage-ci",
         type="tertiary",
         width="content",
-        on_click=pipeline._select_stage,
-        args=(ci_stage,),
     )
     header.caption.assert_called_once_with(
         "GitHub Actions",
