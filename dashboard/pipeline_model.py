@@ -38,7 +38,7 @@ def get_ci_pipeline_stage_data(
     if runtime_snapshot is None:
         return {
             "source_classification": "DEMO",
-            "status": "Demo",
+            "status": "Unknown",
             "timestamp": None,
             "details": "Demonstration data",
         }
@@ -74,16 +74,12 @@ def get_ci_pipeline_stage_data(
         "timed_out",
     }
 
-    if raw_status in waiting_states:
-        status = "Queued"
-    elif raw_status == "in_progress":
+    if raw_status in waiting_states or raw_status == "in_progress":
         status = "Running"
     elif conclusion == "success":
-        status = "Success"
-    elif conclusion in failure_states:
+        status = "Completed"
+    elif conclusion in failure_states or conclusion == "cancelled":
         status = "Failed"
-    elif conclusion == "cancelled":
-        status = "Cancelled"
     else:
         status = "Unavailable"
 
@@ -152,7 +148,7 @@ PIPELINE_STAGES = (
         platform="GHCR",
         platform_label="GHCR",
         source_classification="LIVE",
-        status="Retrieval unavailable",
+        status="Unavailable",
         description="The immutable image is published for delivery.",
         detail_view="GHCR",
         data_provider=get_ghcr_stage_data,
@@ -162,8 +158,8 @@ PIPELINE_STAGES = (
         display_name="Argo CD",
         platform="Argo CD",
         platform_label="Argo CD",
-        source_classification="DEMO",
-        status="Active",
+        source_classification="LIVE",
+        status="Unavailable",
         description="Desired state changes are detected and synchronized.",
     ),
     PipelineStage(
@@ -171,8 +167,8 @@ PIPELINE_STAGES = (
         display_name="Kubernetes",
         platform="Kubernetes",
         platform_label="K8s",
-        source_classification="DEMO",
-        status="Upcoming",
+        source_classification="LIVE",
+        status="Unavailable",
         description="The workload is rolled out and operated.",
     ),
 )

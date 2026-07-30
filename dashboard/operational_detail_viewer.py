@@ -15,6 +15,7 @@ from dashboard.formatting import (
     normalize_dashboard_timestamp,
 )
 from dashboard.layout import render_component_header
+from dashboard.lifecycle import PipelineRun
 from dashboard.operational_events import (
     EventClassification,
     OperationalEvent,
@@ -409,11 +410,12 @@ def _render_event_timeline(
         state = html.escape(event.status.replace("_", " ").title())
         color = EVENT_ICON_COLORS.get(event.icon, EVENT_ICON_COLORS["?"])
         source_class = "event-source"
-        source_style = ""
+        context_color = pipeline_source_context_color(
+            event.source_abbreviation
+        )
+        source_style = f' style="color: {context_color}"'
         if event.source_abbreviation == highlighted_source:
             source_class += " event-source-context"
-            context_color = pipeline_source_context_color(highlighted_source)
-            source_style = f' style="color: {context_color}"'
         rows.append(
             f'<div class="event-row {html.escape(event.classification)}" '
             f'role="row">'
@@ -845,11 +847,11 @@ def get_ghcr_stage_data(
     details = get_ghcr_data(runtime_snapshot)
     availability = details.get("availability")
     status = {
-        "available": "Image published",
-        "missing": "Image unavailable",
-        "unavailable": "Retrieval unavailable",
-        "authentication_unavailable": "Authentication unavailable",
-    }.get(availability, "Retrieval unavailable")
+        "available": "Completed",
+        "missing": "Unavailable",
+        "unavailable": "Unavailable",
+        "authentication_unavailable": "Unavailable",
+    }.get(availability, "Unknown")
 
     return {
         "source_classification": "LIVE",
@@ -1660,10 +1662,22 @@ def _build_github_feed(details: dict[str, Any]) -> list[OperationalEvent]:
     return order_operational_events(events)
 
 
-def _build_ghcr_feed(snapshot: dict[str, Any]) -> list[OperationalEvent]:
+def _build_ghcr_feed(
+    snapshot: dict[str, Any],
+    pipeline_run: PipelineRun | None = None,
+) -> list[OperationalEvent]:
+    """Project GHCR events from the same correlated evidence as its tile."""
     details = snapshot.get("ghcr") or {}
     availability = details.get("availability")
-    if availability == "available":
+    stage = pipeline_run.stage("ghcr") if pipeline_run else None
+    stage_status = (
+        stage.status
+        if stage is not None
+        else "Completed"
+        if availability == "available"
+        else "Unavailable"
+    )
+    if stage_status == "Completed":
         image_name = details.get("image_name") or "GHCR image"
         latest_tag = details.get("latest_tag")
         image_reference = (
@@ -1696,6 +1710,64 @@ def _build_ghcr_feed(snapshot: dict[str, Any]) -> list[OperationalEvent]:
                 event_id=(
                     f"ghcr:{details.get('package_name')}:"
                     f"{details.get('digest') or details.get('published_at')}"
+                ),
+                external_url=details.get("package_url"),
+            )
+        ]
+
+    if stage_status == "Running":
+        return [
+            _operational_event(
+                timestamp=stage.timestamp if stage else None,
+                source="CR",
+                category="ghcr",
+                status="RUNNING",
+                message="GHCR publication in progress",
+                classification="lifecycle",
+                detail=stage.details if stage else details.get("reason"),
+                order=50,
+                event_id=(
+                    f"ghcr:{pipeline_run.workflow_run_id}:running"
+                    if pipeline_run
+                    else "ghcr:running"
+                ),
+                external_url=details.get("package_url"),
+            )
+        ]
+
+    if stage_status == "Failed":
+        return [
+            _operational_event(
+                timestamp=stage.timestamp if stage else None,
+                source="CR",
+                category="ghcr",
+                status="FAILED",
+                message="GHCR publication failed",
+                classification="failure",
+                detail=stage.details if stage else details.get("reason"),
+                order=50,
+                event_id=(
+                    f"ghcr:{pipeline_run.workflow_run_id}:failed"
+                    if pipeline_run
+                    else "ghcr:failed"
+                ),
+                external_url=details.get("package_url"),
+            )
+        ]
+
+    if stage_status == "Unknown" and availability == "available":
+        return [
+            _operational_event(
+                timestamp=details.get("published_at"),
+                source="CR",
+                category="ghcr",
+                status="INFO",
+                message="GHCR image not correlated to current run",
+                classification="information",
+                detail=details.get("image_name"),
+                order=90,
+                event_id=(
+                    f"ghcr:{details.get('package_name')}:uncorrelated"
                 ),
                 external_url=details.get("package_url"),
             )
@@ -1950,6 +2022,7 @@ def _render_operational_timeline(
 def _render_stage_timeline(
     source: str,
     runtime_snapshot: dict[str, Any] | None,
+    pipeline_run: PipelineRun | None = None,
 ) -> None:
     """Render the shared timeline for All or one pipeline-stage context."""
     details = (
@@ -1961,7 +2034,7 @@ def _render_stage_timeline(
         *_load_local_repository_events(),
         *_build_github_feed(details),
         *_build_docker_build_feed(details),
-        *_build_ghcr_feed(details),
+        *_build_ghcr_feed(details, pipeline_run),
         *_build_argocd_feed(details),
         *_build_kubernetes_feed(details),
     ]
@@ -1981,6 +2054,7 @@ def _render_stage_timeline(
 
 def render_operational_detail_viewer(
     runtime_snapshot: dict[str, Any] | None = None,
+    pipeline_run: PipelineRun | None = None,
 ) -> None:
     """Render compact operational details from the selected source."""
     source_key = "operational_detail_source"
@@ -2007,4 +2081,4 @@ def render_operational_detail_viewer(
             label_visibility="collapsed",
             key=source_key,
         )
-        _render_stage_timeline(source, runtime_snapshot)
+        _render_stage_timeline(source, runtime_snapshot, pipeline_run)

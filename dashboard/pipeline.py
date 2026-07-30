@@ -23,46 +23,18 @@ PIPELINE_COLUMN_WIDTHS = tuple(
     for index in range(7)
     for width in ((1.0, 0.14) if index < 6 else (1.0,))
 )
-CI_STATUS_STYLES = {
-    "Queued": ("QUEUED", "gray"),
+PIPELINE_STATUS_STYLES = {
+    "Completed": ("COMPLETED", "green"),
     "Running": ("RUNNING", "blue"),
-    "Success": ("SUCCESS", "green"),
     "Failed": ("FAILED", "red"),
-    "Cancelled": ("CANCELLED", "orange"),
+    "Unknown": ("UNKNOWN", "gray"),
     "Unavailable": ("UNAVAILABLE", "gray"),
-    "Demo": ("DEMO", "violet"),
 }
 
 
 def _select_stage(stage: PipelineStage) -> None:
     st.session_state["operational_detail_source"] = stage.display_name
     st.rerun()
-
-
-def _render_standard_pipeline_stage(
-    stage: PipelineStage,
-    icon_path: Path,
-) -> None:
-    """Render the established pipeline card used by every non-CI stage."""
-    card = st.container(
-        horizontal_alignment="center",
-        vertical_alignment="center",
-        gap="medium",
-    )
-    if card.button(
-        stage.display_name,
-        key=f"pipeline-stage-{stage.identifier}",
-        type="tertiary",
-        width="content",
-    ):
-        _select_stage(stage)
-
-    _render_product_icon(card, icon_path, width=54)
-    card.caption(
-        f"{stage.platform_label} · {stage.status}",
-        width="content",
-        text_alignment="center",
-    )
 
 
 def _render_product_icon(
@@ -85,7 +57,7 @@ def _render_product_stage_card(
     stage: PipelineStage,
     icon_path: Path,
 ) -> None:
-    """Render the product-first visual language piloted by the CI stage."""
+    """Render the shared product-first language for every pipeline stage."""
     card = st.container(
         horizontal_alignment="center",
         vertical_alignment="center",
@@ -101,15 +73,20 @@ def _render_product_stage_card(
 
     _render_product_icon(card, icon_path, width=64)
 
+    supporting_label = (
+        f"{stage.platform} · {stage.details}"
+        if stage.status == "Unavailable" and stage.details
+        else stage.platform
+    )
     card.caption(
-        stage.platform,
+        supporting_label,
         width="content",
         text_alignment="center",
     )
 
-    badge_label, badge_color = CI_STATUS_STYLES.get(
+    badge_label, badge_color = PIPELINE_STATUS_STYLES.get(
         stage.status,
-        CI_STATUS_STYLES["Unavailable"],
+        PIPELINE_STATUS_STYLES["Unknown"],
     )
     card.badge(badge_label, color=badge_color)
 
@@ -143,13 +120,10 @@ def render_delivery_pipeline(
                 height=PIPELINE_CARD_HEIGHT,
                 key=card_key,
             ):
-                if stage.identifier == "ci":
-                    _render_product_stage_card(stage, CI_WORKFLOW_ICON)
-                else:
-                    _render_standard_pipeline_stage(
-                        stage,
-                        PIPELINE_STAGE_ICONS[stage.identifier],
-                    )
+                _render_product_stage_card(
+                    stage,
+                    PIPELINE_STAGE_ICONS[stage.identifier],
+                )
 
             if index < len(pipeline_stages) - 1:
                 with pipeline_columns[index * 2 + 1]:

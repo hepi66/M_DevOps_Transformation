@@ -3,6 +3,7 @@ from datetime import timezone
 from typing import Literal
 
 from dashboard.formatting import parse_dashboard_timestamp
+from dashboard.pipeline_context import OPERATIONAL_SOURCES
 
 EventClassification = Literal[
     "lifecycle",
@@ -55,13 +56,7 @@ def order_operational_events(
         unique_events.append(event)
 
     source_order = {
-        "GI": 0,
-        "GH": 1,
-        "CI": 2,
-        "DB": 3,
-        "CR": 4,
-        "CD": 5,
-        "K8": 6,
+        source: index for index, source in enumerate(OPERATIONAL_SOURCES)
     }
 
     def sort_key(event: OperationalEvent) -> tuple[float, int, int, str]:
