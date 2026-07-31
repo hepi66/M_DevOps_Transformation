@@ -1778,6 +1778,25 @@ def test_selected_stage_css_uses_centralized_stage_color(monkeypatch):
     assert "--pipeline-context-accent: #06B6D4" in html_output.call_args.args[0]
 
 
+def test_pipeline_title_interactions_use_each_stage_context_color(monkeypatch):
+    html_output = Mock()
+    monkeypatch.setattr(layout.st, "html", html_output)
+    monkeypatch.setattr(layout.st, "session_state", {})
+
+    layout.render_dashboard_styles()
+
+    rendered_css = html_output.call_args.args[0]
+    for identifier, color in PIPELINE_STAGE_CONTEXT_COLORS.items():
+        assert (
+            f'[class*="st-key-pipeline-stage-card-{identifier}"]'
+            in rendered_css
+        )
+        assert f"--pipeline-stage-title-accent: {color}" in rendered_css
+    assert "button:hover p" in rendered_css
+    assert "button:active p" in rendered_css
+    assert "button:focus p" in rendered_css
+
+
 @pytest.mark.parametrize(
     ("source", "expected_label"),
     [
