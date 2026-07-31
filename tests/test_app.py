@@ -25,7 +25,10 @@ from dashboard.operational_events import (
 )
 from dashboard.pipeline_context import (
     OPERATIONAL_DETAIL_WIDGET_KEY,
-    PIPELINE_SELECTION_OVERRIDE_KEY,
+    PIPELINE_ALL_MODE,
+    PIPELINE_FOLLOW_MODE,
+    PIPELINE_INTERACTION_MODE_KEY,
+    PIPELINE_LAST_OBSERVED_STAGE_KEY,
     PIPELINE_STAGE_CONTEXT_COLORS,
     PIPELINE_STAGE_FILTERS,
     event_pipeline_stage,
@@ -1129,34 +1132,45 @@ def test_all_does_not_fabricate_an_active_stage():
     assert selected_pipeline_stage({"operational_detail_source": "All"}) is None
 
 
-def test_active_pipeline_stage_drives_viewer_without_user_override():
-    state = {OPERATIONAL_DETAIL_WIDGET_KEY: "GHCR"}
-    pipeline_run = Mock(current_stage="build")
-
-    selection = synchronize_active_pipeline_stage(state, pipeline_run)
-
-    assert selection == "Build"
-    assert state["operational_detail_source"] == "Build"
-    assert state[OPERATIONAL_DETAIL_WIDGET_KEY] == "GHCR"
-    assert state[PIPELINE_SELECTION_OVERRIDE_KEY] is False
-
-
-def test_explicit_stage_selection_stops_automatic_following():
+def test_dashboard_starts_in_follow_mode_with_code_selected():
     state = {}
-    select_pipeline_stage(state, "CI")
+
+    selection = synchronize_active_pipeline_stage(
+        state,
+        Mock(current_stage="build"),
+    )
+
+    assert selection == "Code"
+    assert state["operational_detail_source"] == "Code"
+    assert state[PIPELINE_INTERACTION_MODE_KEY] == PIPELINE_FOLLOW_MODE
+    assert state[PIPELINE_LAST_OBSERVED_STAGE_KEY] == "Build"
+
+
+def test_clicked_stage_is_preserved_until_a_later_pipeline_transition():
+    state = {}
+    synchronize_active_pipeline_stage(state, Mock(current_stage="ghcr"))
+    select_pipeline_stage(state, "Build")
 
     selection = synchronize_active_pipeline_stage(
         state,
         Mock(current_stage="ghcr"),
     )
 
-    assert selection == "CI"
-    assert state[PIPELINE_SELECTION_OVERRIDE_KEY] is True
+    assert selection == "Build"
+    assert state[PIPELINE_INTERACTION_MODE_KEY] == PIPELINE_FOLLOW_MODE
+
+    selection = synchronize_active_pipeline_stage(
+        state,
+        Mock(current_stage="argocd"),
+    )
+
+    assert selection == "Argo CD"
+    assert state["operational_detail_source"] == "Argo CD"
 
 
-def test_all_returns_viewer_to_live_pipeline_stage():
+def test_all_is_stable_and_disables_pipeline_following():
     state = {}
-    select_pipeline_stage(state, "Kubernetes")
+    synchronize_active_pipeline_stage(state, Mock(current_stage="build"))
     select_pipeline_stage(state, "All")
 
     selection = synchronize_active_pipeline_stage(
@@ -1164,36 +1178,56 @@ def test_all_returns_viewer_to_live_pipeline_stage():
         Mock(current_stage="ghcr"),
     )
 
-    assert selection == "GHCR"
-    assert state[PIPELINE_SELECTION_OVERRIDE_KEY] is False
+    assert selection == "All"
+    assert state["operational_detail_source"] == "All"
+    assert state[PIPELINE_INTERACTION_MODE_KEY] == PIPELINE_ALL_MODE
+    assert selected_pipeline_stage(state) is None
 
 
-def test_viewer_filter_change_records_manual_override(monkeypatch):
+def test_viewer_stage_selection_reactivates_follow_mode(monkeypatch):
     session_state = {OPERATIONAL_DETAIL_WIDGET_KEY: "Argo CD"}
     monkeypatch.setattr(viewer.st, "session_state", session_state)
 
     viewer._record_viewer_selection()
 
     assert session_state["operational_detail_source"] == "Argo CD"
-    assert session_state[PIPELINE_SELECTION_OVERRIDE_KEY] is True
+    assert session_state[PIPELINE_INTERACTION_MODE_KEY] == PIPELINE_FOLLOW_MODE
 
 
-def test_all_selection_immediately_returns_to_live_pipeline_stage(monkeypatch):
+def test_viewer_all_selection_remains_all(monkeypatch):
     session_state = {
         OPERATIONAL_DETAIL_WIDGET_KEY: "All",
         "operational_detail_source": "Build",
-        PIPELINE_SELECTION_OVERRIDE_KEY: True,
-        "dashboard_monitoring_state": Mock(
-            pipeline_run=Mock(current_stage="ghcr")
-        ),
+        PIPELINE_INTERACTION_MODE_KEY: PIPELINE_FOLLOW_MODE,
     }
     monkeypatch.setattr(viewer.st, "session_state", session_state)
 
     viewer._record_viewer_selection()
 
-    assert session_state["operational_detail_source"] == "GHCR"
-    assert session_state[OPERATIONAL_DETAIL_WIDGET_KEY] == "GHCR"
-    assert session_state[PIPELINE_SELECTION_OVERRIDE_KEY] is False
+    assert session_state["operational_detail_source"] == "All"
+    assert session_state[OPERATIONAL_DETAIL_WIDGET_KEY] == "All"
+    assert session_state[PIPELINE_INTERACTION_MODE_KEY] == PIPELINE_ALL_MODE
+
+
+def test_repeated_switching_between_all_and_follow_is_deterministic():
+    state = {}
+    synchronize_active_pipeline_stage(state, Mock(current_stage="ci"))
+    select_pipeline_stage(state, "All")
+    assert synchronize_active_pipeline_stage(
+        state,
+        Mock(current_stage="build"),
+    ) == "All"
+
+    select_pipeline_stage(state, "CI")
+    assert synchronize_active_pipeline_stage(
+        state,
+        Mock(current_stage="build"),
+    ) == "CI"
+
+    assert synchronize_active_pipeline_stage(
+        state,
+        Mock(current_stage="ghcr"),
+    ) == "GHCR"
 
 
 def test_filter_change_uses_one_github_snapshot(monkeypatch):
@@ -1377,8 +1411,8 @@ def test_build_pipeline_interaction_selects_build_stage(monkeypatch):
 
     assert fake_streamlit.session_state["operational_detail_source"] == "Build"
     assert (
-        fake_streamlit.session_state[PIPELINE_SELECTION_OVERRIDE_KEY]
-        is True
+        fake_streamlit.session_state[PIPELINE_INTERACTION_MODE_KEY]
+        == PIPELINE_FOLLOW_MODE
     )
     fake_streamlit.rerun.assert_called_once_with(scope="app")
 
@@ -1388,7 +1422,7 @@ def test_selected_pipeline_stage_uses_selected_card_key(monkeypatch):
     fake_streamlit.session_state.update(
         {
             "operational_detail_source": "Code",
-            PIPELINE_SELECTION_OVERRIDE_KEY: True,
+            PIPELINE_INTERACTION_MODE_KEY: PIPELINE_FOLLOW_MODE,
         }
     )
     monkeypatch.setattr(pipeline, "st", fake_streamlit)

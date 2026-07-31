@@ -15,6 +15,11 @@ from dashboard.lifecycle import (
     KubernetesProviderData,
     aggregate_pipeline_run,
 )
+from dashboard.pipeline_context import (
+    PIPELINE_FOLLOW_MODE,
+    PIPELINE_INTERACTION_MODE_KEY,
+    PIPELINE_LAST_OBSERVED_STAGE_KEY,
+)
 
 NOW = datetime(2026, 7, 28, 8, 0, tzinfo=timezone.utc)
 COMMIT_SHA = "9715faa3d0fc7c7a545ffaec5817adbac0592e91"
@@ -350,6 +355,8 @@ def test_no_provider_retrieval_occurs_before_refresh_is_due(monkeypatch):
     session_state = {
         monitoring.MONITORING_STATE_KEY: current,
         "operational_detail_source": "CI",
+        PIPELINE_INTERACTION_MODE_KEY: PIPELINE_FOLLOW_MODE,
+        PIPELINE_LAST_OBSERVED_STAGE_KEY: "CI",
     }
     refresh = Mock()
     monkeypatch.setattr(monitoring.st, "session_state", session_state)
@@ -360,6 +367,8 @@ def test_no_provider_retrieval_occurs_before_refresh_is_due(monkeypatch):
     assert result is current
     refresh.assert_not_called()
     assert session_state["operational_detail_source"] == "CI"
+    assert session_state[PIPELINE_INTERACTION_MODE_KEY] == PIPELINE_FOLLOW_MODE
+    assert session_state[PIPELINE_LAST_OBSERVED_STAGE_KEY] == "CI"
 
 
 def test_live_refresh_modes_control_fragment_scheduling():

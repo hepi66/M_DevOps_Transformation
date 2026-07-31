@@ -30,7 +30,6 @@ from dashboard.pipeline_context import (
     pipeline_source_context_color,
     pipeline_stage_source,
     select_pipeline_stage,
-    synchronize_active_pipeline_stage,
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
@@ -2098,7 +2097,7 @@ def render_operational_detail_viewer(
 
 
 def _record_viewer_selection() -> None:
-    """Turn a Viewer selection into an explicit override, or resume live mode."""
+    """Activate stable All mode or Follow mode for one selected stage."""
     selected_source = st.session_state.get(
         OPERATIONAL_DETAIL_WIDGET_KEY,
         "All",
@@ -2107,14 +2106,3 @@ def _record_viewer_selection() -> None:
         st.session_state,
         selected_source,
     )
-    if normalize_pipeline_filter(selected_source) != "All":
-        return
-
-    monitoring_state = st.session_state.get("dashboard_monitoring_state")
-    pipeline_run = getattr(monitoring_state, "pipeline_run", None)
-    if pipeline_run is not None:
-        live_source = synchronize_active_pipeline_stage(
-            st.session_state,
-            pipeline_run,
-        )
-        st.session_state[OPERATIONAL_DETAIL_WIDGET_KEY] = live_source

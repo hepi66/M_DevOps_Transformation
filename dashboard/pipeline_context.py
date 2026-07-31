@@ -93,9 +93,12 @@ PIPELINE_IDENTIFIER_STAGES = {
     identifier: stage
     for stage, identifier in PIPELINE_STAGE_IDENTIFIERS.items()
 }
-PIPELINE_SELECTION_OVERRIDE_KEY = "pipeline_selection_manual"
 PIPELINE_CONTEXT_SELECTION_KEY = "operational_detail_source"
 OPERATIONAL_DETAIL_WIDGET_KEY = "operational_detail_source_widget"
+PIPELINE_INTERACTION_MODE_KEY = "pipeline_interaction_mode"
+PIPELINE_LAST_OBSERVED_STAGE_KEY = "pipeline_last_observed_stage"
+PIPELINE_FOLLOW_MODE = "follow"
+PIPELINE_ALL_MODE = "all"
 
 
 def normalize_pipeline_filter(selection: object) -> str:
@@ -118,11 +121,13 @@ def select_pipeline_stage(
     session_state: MutableMapping[str, object],
     stage: str,
 ) -> None:
-    """Record one explicit stage selection without duplicating its value."""
+    """Select one stage in Follow mode, or activate the stable All mode."""
     normalized_stage = normalize_pipeline_filter(stage)
     session_state[PIPELINE_CONTEXT_SELECTION_KEY] = normalized_stage
-    session_state[PIPELINE_SELECTION_OVERRIDE_KEY] = (
-        normalized_stage != "All"
+    session_state[PIPELINE_INTERACTION_MODE_KEY] = (
+        PIPELINE_ALL_MODE
+        if normalized_stage == "All"
+        else PIPELINE_FOLLOW_MODE
     )
 
 
@@ -130,22 +135,37 @@ def synchronize_active_pipeline_stage(
     session_state: MutableMapping[str, object],
     pipeline_run: PipelineRun,
 ) -> str:
-    """Follow PipelineRun unless the user has explicitly selected a stage."""
-    selection = normalize_pipeline_filter(
-        session_state.get(PIPELINE_CONTEXT_SELECTION_KEY, "All")
-    )
-    if selection == "All":
-        session_state[PIPELINE_SELECTION_OVERRIDE_KEY] = False
-
-    if session_state.get(PIPELINE_SELECTION_OVERRIDE_KEY, False):
-        return selection
-
+    """Apply the explicit All/Follow interaction state machine."""
     active_stage = PIPELINE_IDENTIFIER_STAGES.get(
         pipeline_run.current_stage or ""
     )
-    synchronized = active_stage or "All"
-    session_state[PIPELINE_CONTEXT_SELECTION_KEY] = synchronized
-    return synchronized
+    if PIPELINE_INTERACTION_MODE_KEY not in session_state:
+        session_state[PIPELINE_INTERACTION_MODE_KEY] = PIPELINE_FOLLOW_MODE
+        session_state[PIPELINE_CONTEXT_SELECTION_KEY] = "Code"
+        session_state[PIPELINE_LAST_OBSERVED_STAGE_KEY] = active_stage
+        return "Code"
+
+    mode = session_state[PIPELINE_INTERACTION_MODE_KEY]
+    if mode == PIPELINE_ALL_MODE:
+        session_state[PIPELINE_CONTEXT_SELECTION_KEY] = "All"
+        session_state[PIPELINE_LAST_OBSERVED_STAGE_KEY] = active_stage
+        return "All"
+
+    selection = normalize_pipeline_filter(
+        session_state.get(PIPELINE_CONTEXT_SELECTION_KEY, "Code")
+    )
+    if PIPELINE_LAST_OBSERVED_STAGE_KEY not in session_state:
+        session_state[PIPELINE_LAST_OBSERVED_STAGE_KEY] = active_stage
+        return selection
+
+    previous_stage = session_state[PIPELINE_LAST_OBSERVED_STAGE_KEY]
+    if active_stage != previous_stage:
+        session_state[PIPELINE_LAST_OBSERVED_STAGE_KEY] = active_stage
+        if active_stage is not None:
+            selection = active_stage
+            session_state[PIPELINE_CONTEXT_SELECTION_KEY] = selection
+
+    return selection
 
 
 def pipeline_stage_context_color(stage: str | None) -> str:

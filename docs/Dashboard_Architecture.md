@@ -161,20 +161,25 @@ The global `Live Refresh` control changes scheduling only:
   deadlines during ordinary UI reruns. The current snapshot remains visible.
   `Refresh now` still requests exactly one complete monitoring cycle.
 
-`PipelineRun.current_stage` is the authoritative Active Pipeline Stage. While
-the Viewer is in live-follow mode, this stage updates the existing
-`operational_detail_source` selection; Operational Events are not inspected to
-infer activity.
+`PipelineRun.current_stage` is the authoritative Active Pipeline Stage.
+Operational Events are not inspected to infer activity. The interaction has
+two explicit modes:
 
-Every pipeline tile writes to that same selection. Clicking a tile or choosing
-an individual Viewer source enables a small manual-override flag, preventing
-later monitoring refreshes from replacing the user's choice. `All` means
-**Return to Live**: its Viewer callback clears the override and immediately
-resolves the selection from the current shared `PipelineRun.current_stage`.
-The next Viewer render therefore resumes automatic following without waiting
-for another provider refresh. The internal pipeline context and the Streamlit
-selectbox use separate session keys so automatic synchronization never mutates
-an already-instantiated widget.
+- **Follow Pipeline** is the startup default. The dashboard initially selects
+  Code. A pipeline-card click selects that stage and activates Follow Pipeline.
+  The selected card and Viewer remain on the clicked stage for the current
+  observation, then move together when `PipelineRun.current_stage` makes its
+  next real transition.
+- **All** is a stable unfiltered overview. Selecting it clears the pipeline-card
+  selection and suspends automatic following. Incoming observations do not
+  replace All. Selecting any individual Viewer source or pipeline card
+  activates Follow Pipeline again.
+
+The state machine stores one domain selection, one explicit interaction mode,
+and the last observed pipeline stage used for transition detection. The
+Streamlit selectbox retains a separate widget key only as a UI mirror, because
+Streamlit does not permit application code to mutate an already-instantiated
+widget key.
 
 The selected tile and Operational Detail Viewer use the contextual accent
 defined for that stage in the authoritative operational-source vocabulary.
