@@ -92,12 +92,21 @@ def render_dashboard_styles() -> None:
     context_accent = pipeline_stage_context_color(
         selected_pipeline_stage(st.session_state)
     )
+    stage_title_accent_rules = "\n".join(
+        (
+            f'[class*="st-key-pipeline-stage-card-{identifier}"] {{\n'
+            f"    --pipeline-stage-title-accent: {color};\n"
+            "}"
+        )
+        for identifier, color in PIPELINE_STAGE_CONTEXT_COLORS.items()
+    )
     st.html(
         f"""
 <style>
 :root {{
     --pipeline-context-accent: {context_accent};
 }}
+{stage_title_accent_rules}
 [class*="st-key-pipeline-stage-card-"][class*="-selected"] {{
     border-color: var(--pipeline-context-accent) !important;
     box-shadow:
@@ -128,6 +137,14 @@ def render_dashboard_styles() -> None:
     font-size: 1.25rem;
     font-weight: 700;
     line-height: 1.1;
+}}
+[class*="st-key-pipeline-stage-card-"]
+[class*="st-key-pipeline-stage-"] button:hover p,
+[class*="st-key-pipeline-stage-card-"]
+[class*="st-key-pipeline-stage-"] button:active p,
+[class*="st-key-pipeline-stage-card-"]
+[class*="st-key-pipeline-stage-"] button:focus p {{
+    color: var(--pipeline-stage-title-accent) !important;
 }}
 .stHeading h3 {{
     font-size: 1.5rem;
