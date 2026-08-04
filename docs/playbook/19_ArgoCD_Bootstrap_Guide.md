@@ -218,19 +218,19 @@ This step activates GitOps management.
 
 # Synchronization
 
-After registration:
+After registration, the automated `root-app` reads the Application definitions and creates or updates the `m-devops-dashboard` child Application. The child then detects differences between Git and the workload:
 
 ```text id="z8q6pb"
-ArgoCD
-        ↓
-Reads Repository
-        ↓
-Detects Resources
-        ↓
-Synchronizes Cluster
+root-app
+        â†“
+Child Application Managed
+        â†“
+Workload Drift Detected
+        â†“
+Explicit m-devops-dashboard Sync
 ```
 
-The cluster begins moving toward the desired state stored in Git.
+The child Application remains manually synchronized. Root automation does not automatically apply dashboard workload drift.
 
 ---
 

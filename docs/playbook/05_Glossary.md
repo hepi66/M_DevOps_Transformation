@@ -16,15 +16,14 @@ This document should be used whenever an unfamiliar term appears in the Playbook
 
 The software being delivered and operated by the platform.
 
-In this project:
+In this project there are two application roles:
 
-```text id="n7v3pk"
-Streamlit Application
+`	ext id="n7v3pk"
+app.py           Educational DevOps lifecycle demonstrator
+dashboard_app.py Deployed M-DevOps Dashboard product
+` 
 
-app.py
-```
-
-The application is packaged into a container and deployed to Kubernetes.
+The current container and Kubernetes deployment start `dashboard_app.py`; `app.py` remains independently runnable for demonstration purposes.
 
 ---
 

@@ -141,9 +141,9 @@ Indicators:
 ```text
 Image exists
 
-Latest image available
+Expected immutable commit-SHA tag present
 
-Expected tag present
+Running image matches the desired SHA
 ```
 
 Target location:
@@ -158,7 +158,7 @@ A missing image blocks deployment.
 
 # GitOps Health
 
-GitOps health is measured through synchronization and application status.
+GitOps state is measured through two independent dimensions: Sync status reports agreement with Git, while Health status reports runtime resource health. `Healthy` and `OutOfSync` can therefore occur together.
 
 Desired state:
 

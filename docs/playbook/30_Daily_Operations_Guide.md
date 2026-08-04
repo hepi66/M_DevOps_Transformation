@@ -133,14 +133,14 @@ Confirm deployment artifacts exist in GHCR.
 Verify:
 
 ```text id="b5t9wv"
-Expected image available
+Expected immutable commit-SHA image available
 
-Latest image published
+CI-produced latest tag available
 
 No publication failures
 ```
 
-The deployment chain depends on artifact availability.
+Registry freshness does not identify the deployed version. Correlate the desired immutable SHA in the Deployment manifest with the running image and the corresponding workflow/GHCR artifact.
 
 ---
 

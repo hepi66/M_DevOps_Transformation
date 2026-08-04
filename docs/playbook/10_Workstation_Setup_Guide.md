@@ -259,6 +259,12 @@ Dependencies should be installed successfully.
 Run:
 
 ```powershell
+streamlit run dashboard_app.py
+` 
+
+The deployed product entry point is `dashboard_app.py`. To run the independent educational lifecycle demonstrator instead, use:
+
+`powershell
 streamlit run app.py
 ```
 

@@ -243,7 +243,7 @@ Store deployable images.
 
 Result:
 
-Image becomes available for deployment.
+The workflow publishes both `latest` and the immutable `${{ github.sha }}` tag. The image becomes a deployable artifact, but publication does not promote it into Kubernetes or trigger the manually synchronized dashboard child Application.
 
 ---
 

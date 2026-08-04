@@ -37,9 +37,11 @@ k8s/
 │   └── m-devops-dashboard.yaml
 └── workloads/
     └── m-devops-dashboard/
-        ├── namespace.yaml
-        ├── deployment.yaml
-        ├── service.yaml
+        |-- namespace.yaml
+        |-- serviceaccount.yaml
+        |-- rbac.yaml
+        |-- deployment.yaml
+        |-- service.yaml
         └── kustomization.yaml
 ```
 
@@ -106,8 +108,7 @@ In a second terminal:
 Invoke-WebRequest http://127.0.0.1:8501/_stcore/health
 ```
 
-The expected health response has HTTP status `200`. Stop port-forwarding with
-`Ctrl+C` after verification.
+The expected health response has HTTP status `200`. Port-forwarding only exposes the already-running ClusterIP Service to the local host; it does not start or deploy the application. Stop port-forwarding with `Ctrl+C` after verification without affecting the running workload.
 
 The dashboard can start without GitHub or GHCR credentials. Providers that
 cannot authenticate retain their established unavailable or demonstration
@@ -336,7 +337,7 @@ Kubernetes deploys container images.
 Example:
 
 ```yaml
-image: ghcr.io/<owner>/m-devops-transformation:latest
+image: ghcr.io/hepi66/m_devops_transformation:<commit-sha>
 ```
 
 Deployment process:
@@ -371,7 +372,7 @@ Container Started
 Application Available
 ```
 
-Each step must succeed for the application to become operational.
+Each step must succeed for the application to become operational. A change to any Deployment Pod-template field can create a new ReplicaSet and rollout even when the image reference itself is unchanged.
 
 ---
 
@@ -436,9 +437,7 @@ Kubernetes
 Runs Desired State
 ```
 
-ArgoCD deploys.
-
-Kubernetes executes.
+Argo CD detects desired-state changes and, after explicit synchronization of the current dashboard child Application, applies them. Kubernetes executes the resulting workload. Argo CD Sync and Health are independent; `Healthy` plus `OutOfSync` is valid before that synchronization.
 
 ---
 
@@ -524,19 +523,6 @@ Verify:
 kubectl get services
 kubectl get pods
 ```
-
----
-
-# Current Platform Knowledge Gaps
-
-The following areas require additional verification:
-
-* Final deployment manifest structure
-* Service manifest details
-* ApplicationSet deployment relationships
-* Full bootstrap procedure
-
-These gaps were identified during Playbook reconstruction and should be addressed as additional validated information becomes available.
 
 ---
 

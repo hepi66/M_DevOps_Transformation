@@ -49,6 +49,8 @@ Primary files:
 
 ```text id="2s4n4l"
 app.py
+dashboard_app.py
+dashboard/
 requirements.txt
 ```
 
@@ -58,7 +60,7 @@ Responsibilities:
 * Dependency definitions
 * Local execution
 
-This is the primary area for feature development.
+`dashboard_app.py` and `dashboard/` are the current product development area. `app.py` is the independent educational lifecycle demonstrator.
 
 ---
 
@@ -183,7 +185,7 @@ python -m pip install -r requirements-dev.txt
 Start the application:
 
 ```powershell id="vjvr7v"
-streamlit run app.py
+streamlit run dashboard_app.py
 ```
 
 Verify:
@@ -192,7 +194,7 @@ Verify:
 * Browser opens
 * Application responds correctly
 
-This confirms the local development environment is functional.
+This confirms the dashboard product's local development environment is functional. Run `streamlit run app.py` only when validating the independent lifecycle demonstrator.
 
 ---
 
@@ -285,7 +287,7 @@ The objective is to keep the repository continuously deployable.
 Application:
 
 ```powershell id="kzuhso"
-streamlit run app.py
+streamlit run dashboard_app.py
 ```
 
 Tests:

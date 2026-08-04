@@ -161,10 +161,10 @@ Responsibilities:
 
 * Monitor Git repositories
 * Detect configuration changes
-* Synchronize desired and actual state
-* Self-heal configuration drift
+* Report differences between desired and actual state
+* Synchronize resources according to each Application's sync policy
 
-ArgoCD continuously ensures that the cluster reflects the state declared in Git.
+In the current platform, the automated `root-app` manages the child Application definition. The `m-devops-dashboard` child detects workload drift but is synchronized explicitly; it does not currently self-heal.
 
 ---
 
@@ -255,11 +255,12 @@ The deployment lifecycle follows the sequence below:
 2. Changes are committed to Git.
 3. GitHub Actions validates the change.
 4. A Docker image is built.
-5. The image is published to GHCR.
-6. ArgoCD detects repository state.
-7. Kubernetes receives updated deployment instructions.
-8. Containers are started or updated.
-9. Validation scripts confirm platform health.
+5. The image is published to GHCR with `latest` and immutable commit-SHA tags. Publication alone does not deploy it.
+6. The selected commit-SHA tag is written to the dashboard Deployment manifest and the change reaches `main`.
+7. ArgoCD detects the child Application as `OutOfSync`, and an operator explicitly synchronizes it.
+8. Kubernetes receives the updated deployment instructions.
+9. Containers are started or updated.
+10. Validation scripts confirm synchronization and workload health independently.
 
 ---
 
