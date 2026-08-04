@@ -101,11 +101,11 @@ Engineers should validate changes locally before committing.
 Recommended validation activities:
 
 ```powershell
-pytest
+python -m pytest
 ```
 
 ```powershell
-streamlit run app.py
+streamlit run dashboard_app.py
 ```
 
 ```powershell
@@ -295,8 +295,10 @@ Docker Build
         ↓
 Container Image
         ↓
-GHCR
-        ↓
+GHCR (latest and immutable commit SHA)
+        ->
+Commit-SHA Promotion in Deployment Manifest
+        ->
 Kubernetes Pull
 ```
 
@@ -306,7 +308,7 @@ No deployment can occur without a valid artifact.
 
 # Phase 5 – GitOps Deployment
 
-Deployment responsibility transfers to ArgoCD.
+After CI publication, release promotion selects the immutable commit-SHA image and updates the Deployment manifest on `main`. Deployment responsibility then transfers to Argo CD.
 
 Flow:
 
@@ -340,13 +342,15 @@ Typical flow:
 Repository Change
         ↓
 ArgoCD Detects Change
-        ↓
-Synchronization
-        ↓
+        ->
+m-devops-dashboard Becomes OutOfSync
+        ->
+Explicit Child Synchronization
+        ->
 Deployment Update
 ```
 
-This removes the need for manual deployment commands.
+This removes the need for direct workload deployment commands, but the current child Application still requires explicit synchronization.
 
 ---
 

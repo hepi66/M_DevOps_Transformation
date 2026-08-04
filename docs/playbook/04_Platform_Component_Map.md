@@ -431,8 +431,8 @@ Quality Checks
         ↓
 Docker Build
         ↓
-GHCR Publication
-        ↓
+
+ArgoCD�
 ArgoCD Sync
         ↓
 Kubernetes Deployment

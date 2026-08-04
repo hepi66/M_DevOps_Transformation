@@ -66,11 +66,11 @@ Responsibilities:
 
 * Monitor Git repositories
 * Detect configuration changes
-* Synchronize cluster state
-* Report deployment health
-* Self-heal configuration drift
+* Synchronize cluster state according to each Application's policy
+* Report synchronization and deployment health independently
+* Support self-healing where it is explicitly enabled
 
-ArgoCD acts as the automation engine between Git and Kubernetes.
+In the current platform, the automated `root-app` manages child Application definitions. The `m-devops-dashboard` child detects drift but uses manual synchronization and has no self-healing policy.
 
 ---
 
@@ -130,7 +130,7 @@ Purpose:
 * Register application definitions
 * Serve as GitOps entry point
 
-The Root Application pattern allows ArgoCD to manage multiple applications through a single entry point.
+The Root Application pattern allows ArgoCD to manage multiple applications through a single entry point. Here, `root-app` is automated and creates or updates the `m-devops-dashboard` child Application; it does not make that child's workload synchronization automatic.
 
 ---
 
@@ -183,13 +183,15 @@ Git Repository
 Manifest Change
         ↓
 ArgoCD Detects Change
-        ↓
-Synchronization
-        ↓
+        â†“
+Child Application Becomes OutOfSync
+        â†“
+Explicit Child Synchronization
+        â†“
 Kubernetes Updated
 ```
 
-No direct deployment command is required.
+The current dashboard deployment requires no direct `kubectl apply` for the workload, but it does require an explicit synchronization action for the `m-devops-dashboard` child Application.
 
 ---
 
@@ -209,7 +211,7 @@ ArgoCD Detects Drift
 Desired State Restored
 ```
 
-This helps maintain platform consistency.
+This capability helps maintain platform consistency when enabled. It is a generic Argo CD capability; self-healing is not enabled for the current `m-devops-dashboard` child Application.
 
 ---
 
@@ -227,7 +229,7 @@ Missing
 Unknown
 ```
 
-Healthy indicates that the deployed resources match the desired state and are functioning correctly.
+Healthy indicates that deployed resources are functioning correctly. It does not indicate whether they match Git; a child Application can validly be `Healthy` and `OutOfSync` before manual synchronization.
 
 ---
 
@@ -241,12 +243,14 @@ OutOfSync
 Unknown
 ```
 
-A healthy deployment should report:
+The target steady state reports both:
 
 ```text id="q2w9pl"
-Healthy
-Synced
+Health: Healthy
+Sync: Synced
 ```
+
+These are independent dimensions: `Healthy` describes runtime health, while `Synced` describes agreement with Git.
 
 ---
 
@@ -259,7 +263,7 @@ ArgoCD deploys manifests that reference images.
 Example:
 
 ```yaml id="z6k1tr"
-image: ghcr.io/<owner>/m-devops-transformation:latest
+image: ghcr.io/hepi66/m_devops_transformation:<commit-sha>
 ```
 
 Deployment flow:

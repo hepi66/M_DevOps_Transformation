@@ -214,7 +214,7 @@ Synchronization
 Cluster Updated
 ```
 
-This process should require no manual deployment actions.
+For the current dashboard child, Argo CD detects the change automatically but does not apply it automatically. An operator must explicitly synchronize `m-devops-dashboard`; no direct workload `kubectl apply` is required.
 
 ---
 
@@ -340,7 +340,7 @@ Synchronization
 State Restored
 ```
 
-This behavior improves platform reliability.
+This behavior improves platform reliability when automated synchronization and self-healing are enabled. The current `m-devops-dashboard` child has neither enabled: drift is detected automatically and restored only after explicit synchronization.
 
 ---
 

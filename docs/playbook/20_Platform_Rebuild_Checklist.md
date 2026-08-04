@@ -145,7 +145,9 @@ Verify:
 Verify presence of:
 
 ```text
-□ app.py
+- [ ] app.py
+
+- [ ] dashboard_app.py
 
 □ requirements.txt
 
@@ -215,7 +217,7 @@ Verify:
 Execute:
 
 ```powershell
-streamlit run app.py
+streamlit run dashboard_app.py
 ```
 
 Verify:
@@ -465,9 +467,11 @@ Verify:
 Verify:
 
 ```text
-□ GitOps synchronization active
+- [ ] root-app has created the m-devops-dashboard child Application
 
-□ Desired state applied
+- [ ] Dashboard child explicitly synchronized
+
+- [ ] Desired workload state applied
 
 □ No critical synchronization errors
 ```

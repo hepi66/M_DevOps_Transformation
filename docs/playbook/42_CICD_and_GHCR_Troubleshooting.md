@@ -443,9 +443,9 @@ Verify:
 ```text id="f7m3vx"
 Latest workflow completed
 
-Latest image published
+Expected immutable commit-SHA image published
 
-Deployment uses expected tag
+Running deployment uses the expected SHA
 ```
 
 ---
@@ -471,10 +471,10 @@ Review deployment manifest image reference.
 Example:
 
 ```text id="b2w9pk"
-ghcr.io/<owner>/m-devops-transformation:latest
+ghcr.io/hepi66/m_devops_transformation:<expected-commit-sha>
 ```
 
-Verify image source and tag.
+Verify that the manifest SHA is the intended release, that the same immutable tag exists in GHCR, and that the running workload image matches it. The additional `latest` tag is not sufficient deployment evidence.
 
 ---
 

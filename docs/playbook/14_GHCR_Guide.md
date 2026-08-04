@@ -113,7 +113,7 @@ ghcr.io/<owner>/<repository>:<tag>
 Example:
 
 ```text id="x4ntzg"
-ghcr.io/<owner>/m-devops-transformation:latest
+ghcr.io/hepi66/m_devops_transformation:<tag>
 ```
 
 Components:
@@ -143,13 +143,14 @@ v1.1.0
 build-123
 ```
 
-The current platform commonly references:
+The CI workflow publishes two tags:
 
 ```text id="e2x6s5"
 latest
+<commit-sha>
 ```
 
-Future environments may use explicit version tags.
+The Kubernetes Deployment uses the immutable commit-SHA tag. `latest` remains an additional convenience tag and is not the current deployment identity.
 
 ---
 
@@ -169,7 +170,7 @@ Docker Build
 GHCR Push
 ```
 
-Engineers normally do not publish images manually.
+Engineers normally do not publish images manually. Publication creates an artifact only; deployment requires a separate manifest promotion to the selected immutable commit SHA and explicit synchronization of the dashboard child Application.
 
 ---
 
@@ -197,7 +198,7 @@ Kubernetes deploys container images.
 Example deployment reference:
 
 ```yaml id="a4x0pq"
-image: ghcr.io/<owner>/m-devops-transformation:latest
+image: ghcr.io/hepi66/m_devops_transformation:<commit-sha>
 ```
 
 At deployment time:

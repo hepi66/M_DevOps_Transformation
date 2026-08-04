@@ -182,18 +182,18 @@ ArgoCD:
 
 * Monitor repository state
 * Detect changes
-* Synchronize Kubernetes resources
-* Self-heal configuration drift
+* Report the dashboard child as OutOfSync after a manifest change
+* Synchronize the dashboard workload when explicitly requested
 
 ### Important Principle
 
 Git is the source of truth.
 
-ArgoCD continuously attempts to make the cluster match the desired Git state.
+The automated `root-app` manages the child Application definition. The current `m-devops-dashboard` child tracks the workload path on `main` but uses manual synchronization and does not self-heal.
 
 ### Expected Result
 
-Deployment instructions are applied to Kubernetes.
+After an immutable commit-SHA image reference is promoted in Git, explicit synchronization applies the deployment instructions to Kubernetes.
 
 ---
 
@@ -302,8 +302,7 @@ GitHub Actions
 Docker Build
     │
     ▼
-GHCR
-    │
+`r`n    ▼`r`nArgoCD" "GHCR`r`n    └�
     ▼
 ArgoCD
     │

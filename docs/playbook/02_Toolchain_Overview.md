@@ -233,10 +233,10 @@ Responsibilities:
 
 * Monitor repository state
 * Detect configuration changes
-* Synchronize Kubernetes resources
-* Self-heal drift
+* Synchronize Kubernetes resources according to Application policy
+* Report synchronization and health state independently
 
-ArgoCD continuously aligns cluster state with repository state.
+For the current dashboard workload, the automated `root-app` manages the child Application definition, while `m-devops-dashboard` detects drift and requires an explicit synchronization action. Self-healing is not enabled for that child.
 
 ---
 

@@ -240,7 +240,7 @@ and
 Cluster
 ```
 
-Validate synchronization afterward.
+For the current `m-devops-dashboard` child, explicitly synchronize the Application and validate Sync and Health independently afterward.
 
 ---
 
@@ -504,7 +504,7 @@ Partial recovery actions
 
 ## Resolution
 
-Restore Git as the source of truth.
+Restore Git as the source of truth. The current dashboard child detects drift automatically but requires explicit synchronization to apply the Git state.
 
 Avoid maintaining long-term manual cluster modifications.
 
