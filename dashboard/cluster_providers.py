@@ -188,6 +188,9 @@ def observe_argocd(
         sync_status=sync_status,
         health_status=health_status,
         operation_phase=operation.get("phase"),
+        operation_at=parse_provider_timestamp(
+            operation.get("finishedAt") or operation.get("startedAt")
+        ),
         observed_at=parse_provider_timestamp(
             status.get("reconciledAt")
             or operation.get("finishedAt")
@@ -350,6 +353,7 @@ def observe_kubernetes(
                 "deployment.kubernetes.io/revision"
             )
         ),
+        image=image,
         image_tag=image_tag,
         image_digest=running_digest,
         available_replicas=available if isinstance(available, int) else None,

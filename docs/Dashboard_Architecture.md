@@ -26,6 +26,13 @@ The demonstrator must remain fully functional and isolated. It must not be renam
 
 The dashboard package will own dashboard presentation, navigation, styling, reusable UI elements, and dashboard data responsibilities introduced within the approved phase scope.
 
+The dashboard navigation currently exposes two product views:
+
+- **Overview** presents the established operational dashboard.
+- **Deployments** presents the current release identity, GitOps state,
+  Kubernetes runtime, access path, and deployment journey from the same
+  authoritative monitoring snapshot used by Overview.
+
 ## Application Boundaries
 
 The lifecycle demonstrator and the dashboard may share repository-level tooling, dependencies, continuous integration, and delivery infrastructure. They must not share runtime responsibilities.

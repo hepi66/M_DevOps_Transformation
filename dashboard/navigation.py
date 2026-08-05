@@ -12,7 +12,10 @@ def render_navigation(
     show_refresh_control: bool = True,
 ) -> str:
     """Render dashboard navigation and return the selected page identifier."""
-    pages = {"🏠 Overview": "overview"}
+    pages = {
+        "🏠 Overview": "overview",
+        "🚀 Deployments": "deployments",
+    }
 
     st.sidebar.header("Navigation")
     selected_label = st.sidebar.radio(

@@ -96,6 +96,7 @@ class ArgoCDProviderData:
     sync_status: str | None = None
     health_status: str | None = None
     operation_phase: str | None = None
+    operation_at: datetime | None = None
     observed_at: datetime | None = None
     workflow_run_id: str | None = None
     reason: str | None = None
@@ -123,6 +124,7 @@ class KubernetesProviderData:
     namespace: str | None = None
     deployment: str | None = None
     deployment_revision: str | None = None
+    image: str | None = None
     image_tag: str | None = None
     image_digest: str | None = None
     available_replicas: int | None = None
@@ -381,6 +383,7 @@ def normalize_argocd_provider(snapshot: dict[str, Any]) -> ArgoCDProviderData:
         sync_status=sync_status,
         health_status=health_status,
         operation_phase=raw.get("operation_phase"),
+        operation_at=parse_provider_timestamp(raw.get("operation_at")),
         observed_at=parse_provider_timestamp(raw.get("observed_at")),
         workflow_run_id=(
             str(raw["workflow_run_id"])
@@ -437,6 +440,7 @@ def normalize_kubernetes_provider(
         namespace=raw.get("namespace"),
         deployment=raw.get("deployment"),
         deployment_revision=raw.get("deployment_revision") or raw.get("revision"),
+        image=raw.get("image"),
         image_tag=raw.get("image_tag"),
         image_digest=raw.get("image_digest"),
         available_replicas=available if isinstance(available, int) else None,
