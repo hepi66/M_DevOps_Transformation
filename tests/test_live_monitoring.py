@@ -117,7 +117,10 @@ def test_argocd_provider_normalizes_live_application():
                 "status": {
                     "sync": {"status": "Synced", "revision": COMMIT_SHA},
                     "health": {"status": "Healthy"},
-                    "operationState": {"phase": "Succeeded"},
+                    "operationState": {
+                        "phase": "Succeeded",
+                        "finishedAt": "2026-07-28T07:59:00Z",
+                    },
                     "reconciledAt": "2026-07-28T08:00:00Z",
                 },
             },
@@ -127,6 +130,7 @@ def test_argocd_provider_normalizes_live_application():
     observation = observe_argocd(api)
 
     assert observation.availability == "available"
+    assert observation.operation_at is not None
     assert observation.status == "completed"
     assert observation.target_revision == "main"
     assert observation.observed_revision == COMMIT_SHA
@@ -220,6 +224,7 @@ def test_kubernetes_provider_normalizes_rollout_and_pods():
     assert observation.status == "completed"
     assert observation.image_tag == COMMIT_SHA
     assert observation.image_digest == "sha256:abc"
+    assert observation.image is not None
     assert observation.rollout_status == "Available"
     assert observation.replica_set_revision == "3"
     assert observation.pods[0].ready is True

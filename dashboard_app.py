@@ -1,5 +1,6 @@
 import streamlit as st
 
+from dashboard.deployment_page import render_deployment_page
 from dashboard.deployments import render_deployments
 from dashboard.environments import render_environments
 from dashboard.layout import (
@@ -69,6 +70,20 @@ def render_operational_monitoring_fragment() -> None:
         monitoring_state.pipeline_run,
     )
 
+
+@st.fragment(run_every=fragment_interval)
+def render_deployment_page_fragment() -> None:
+    """Render the Deployments page from one shared monitoring observation."""
+    monitoring_state = ensure_monitoring_state(automatic=live_refresh)
+    render_dashboard_styles()
+    if render_monitoring_status(
+        monitoring_state,
+        automatic=live_refresh,
+    ):
+        request_monitoring_refresh()
+        st.rerun()
+    render_deployment_page(monitoring_state)
+
 if selected_page == "overview":
     render_page_header(
         "M-DevOps Dashboard",
@@ -107,4 +122,14 @@ if selected_page == "overview":
     )
     render_platform_cards(platform_snapshot)
 
+    render_dashboard_footer()
+
+elif selected_page == "deployments":
+    render_page_header(
+        "Deployments",
+        "A live view of the currently deployed M-DevOps Dashboard release, "
+        "its immutable artifact identity, GitOps state, Kubernetes runtime, "
+        "and access path.",
+    )
+    render_deployment_page_fragment()
     render_dashboard_footer()
