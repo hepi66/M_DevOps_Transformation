@@ -189,12 +189,19 @@ def test_deployment_page_renders_all_sections(monkeypatch):
     monkeypatch.setattr(deployment_page.st, "columns", Mock(return_value=columns))
     caption = Mock()
     monkeypatch.setattr(deployment_page.st, "caption", caption)
+    timestamp_formatter = Mock(return_value="formatted snapshot time")
+    monkeypatch.setattr(
+        deployment_page,
+        "format_dashboard_timestamp",
+        timestamp_formatter,
+    )
 
     state = _monitoring_state(_snapshot())
     deployment_page.render_deployment_page(state)
 
     assert all(renderer.called for renderer in sections.values())
-    caption.assert_called_once_with("Monitoring snapshot: 04 Aug 10:00:00")
+    timestamp_formatter.assert_called_once_with(NOW)
+    caption.assert_called_once_with("Monitoring snapshot: formatted snapshot time")
 
 
 def test_access_section_is_explicit_and_does_not_start_port_forward(monkeypatch):
