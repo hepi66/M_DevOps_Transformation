@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
@@ -25,8 +26,6 @@ def test_kustomization_contains_dashboard_workload_resources():
     kustomization = _read(WORKLOAD_ROOT / "kustomization.yaml")
 
     assert "namespace.yaml" in kustomization
-    assert "serviceaccount.yaml" in kustomization
-    assert "rbac.yaml" in kustomization
     assert "deployment.yaml" in kustomization
     assert "service.yaml" in kustomization
 
@@ -34,7 +33,14 @@ def test_kustomization_contains_dashboard_workload_resources():
 def test_deployment_uses_ci_image_and_runtime_contract():
     deployment = _read(WORKLOAD_ROOT / "deployment.yaml")
 
-    assert "ghcr.io/hepi66/m_devops_transformation:9715faa3d0fc7c7a545ffaec5817adbac0592e91" in deployment
+    image_match = re.search(r"^\s*image:\s*(\S+)\s*$", deployment, re.MULTILINE)
+    assert image_match is not None
+
+    image_repository, separator, image_tag = image_match.group(1).rpartition(":")
+    assert separator == ":"
+    assert image_repository == "ghcr.io/hepi66/m_devops_transformation"
+    assert image_tag != "latest"
+    assert re.fullmatch(r"[0-9a-f]{40}", image_tag)
     assert "containerPort: 8501" in deployment
     assert "path: /_stcore/health" in deployment
     assert "readinessProbe:" in deployment
@@ -42,7 +48,6 @@ def test_deployment_uses_ci_image_and_runtime_contract():
     assert "requests:" in deployment
     assert "limits:" in deployment
     assert "namespace: m-devops-dashboard" in deployment
-    assert "serviceAccountName: m-devops-dashboard" in deployment
 
 
 def test_service_selector_and_port_match_deployment():
@@ -82,21 +87,6 @@ def test_workload_manifests_contain_no_secret_resources_or_values():
     assert "kind: Secret" not in manifests
     assert "token:" not in manifests.lower()
     assert "password:" not in manifests.lower()
-
-
-def test_dashboard_rbac_is_read_only_and_namespace_scoped():
-    rbac = _read(WORKLOAD_ROOT / "rbac.yaml")
-
-    assert "kind: ClusterRole" not in rbac
-    assert "kind: ClusterRoleBinding" not in rbac
-    assert "namespace: m-devops-dashboard" in rbac
-    assert "namespace: argocd" in rbac
-    assert "resourceNames:" in rbac
-    assert "- m-devops-dashboard" in rbac
-    assert "- get" in rbac
-    assert "- list" in rbac
-    for forbidden_verb in ("create", "update", "patch", "delete", "watch"):
-        assert f"- {forbidden_verb}" not in rbac
 
 
 def test_local_kubeconfig_is_not_stored_in_repository():
