@@ -129,6 +129,132 @@ def test_healthy_synced_deployment_is_fully_correlated():
     assert page_state.running_digest == DIGEST
 
 
+def test_deployed_release_is_extracted_from_full_desired_image_sha():
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(_snapshot())
+    )
+
+    assert page_state.release_sha == COMMIT_SHA
+    assert deployment_page._short_release(page_state.release_sha) == COMMIT_SHA[:7]
+    assert page_state.desired_evidence == "Confirmed"
+
+
+def test_matching_desired_and_running_images_confirm_runtime_artifact():
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(_snapshot())
+    )
+
+    assert page_state.desired_image == page_state.running_image
+    assert page_state.running_evidence == "Confirmed"
+
+
+def test_running_image_mismatch_is_reported_as_conflict():
+    snapshot = _snapshot()
+    other_sha = "a" * 40
+    snapshot["kubernetes"]["pods"][0]["image"] = (
+        f"ghcr.io/hepi66/m_devops_transformation:{other_sha}"
+    )
+
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(snapshot)
+    )
+
+    assert page_state.running_evidence == "Conflict"
+    assert page_state.correlation_status == "Conflict detected"
+
+
+def test_newer_repository_head_does_not_replace_deployed_release():
+    snapshot = _snapshot()
+    snapshot["github_actions"]["workflow"]["headSha"] = "b" * 40
+
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(snapshot)
+    )
+
+    assert page_state.release_sha == COMMIT_SHA
+    assert page_state.workflow_identity is None
+    assert page_state.correlation_status == "Correlated"
+
+
+def test_newer_latest_artifact_does_not_false_confirm_deployed_release():
+    snapshot = _snapshot()
+    snapshot["github_actions"]["workflow"]["headSha"] = "b" * 40
+    snapshot["ghcr"]["tags"] = ["latest", "b" * 40]
+
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(snapshot)
+    )
+
+    assert page_state.release_sha == COMMIT_SHA
+    assert page_state.ghcr_evidence == "Unavailable"
+    assert page_state.published_tag is None
+    assert page_state.correlation_status == "Partially correlated"
+
+
+def test_exact_deployed_ghcr_tag_confirms_release_artifact():
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(_snapshot())
+    )
+
+    assert page_state.ghcr_evidence == "Confirmed"
+    assert page_state.published_tag == COMMIT_SHA
+
+
+def test_missing_deployed_ghcr_tag_remains_unavailable():
+    snapshot = _snapshot()
+    snapshot["ghcr"]["tags"] = ["latest"]
+
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(snapshot)
+    )
+
+    assert page_state.ghcr_evidence == "Unavailable"
+    assert page_state.correlation_status == "Partially correlated"
+
+
+def test_short_or_unrelated_ghcr_tag_does_not_confirm_release():
+    snapshot = _snapshot()
+    snapshot["ghcr"]["tags"] = [COMMIT_SHA[:7], "c" * 40]
+
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(snapshot)
+    )
+
+    assert page_state.ghcr_evidence == "Unavailable"
+
+
+def test_missing_digest_does_not_hide_exact_tag_evidence():
+    snapshot = _snapshot()
+    snapshot["ghcr"].pop("digest")
+    snapshot["kubernetes"].pop("image_digest")
+    snapshot["kubernetes"]["pods"][0].pop("image_digest")
+
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(snapshot)
+    )
+
+    assert page_state.ghcr_evidence == "Confirmed"
+    assert page_state.running_digest is None
+    assert page_state.correlation_status == "Correlated"
+
+
+def test_non_immutable_desired_image_is_not_treated_as_release_identity():
+    snapshot = _snapshot()
+    snapshot["kubernetes"]["image"] = (
+        "ghcr.io/hepi66/m_devops_transformation:latest"
+    )
+    snapshot["kubernetes"]["image_tag"] = "latest"
+
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(snapshot)
+    )
+
+    assert page_state.release_sha == COMMIT_SHA
+    assert page_state.desired_evidence == "Unavailable"
+    assert page_state.running_evidence == "Confirmed"
+    assert page_state.correlation_status == "Partially correlated"
+
+
 def test_healthy_outofsync_remains_healthy_and_visible_separately():
     pipeline_run = aggregate_pipeline_run(_snapshot(sync_status="OutOfSync"))
     page_state = deployment_page.build_deployment_page_state(pipeline_run)

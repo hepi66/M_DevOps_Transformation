@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 import streamlit as st
 
@@ -28,6 +29,28 @@ class DeploymentPageState:
     desired_image: str | None
     running_image: str | None
     running_digest: str | None
+    release_sha: str | None
+    git_evidence: str
+    ghcr_evidence: str
+    desired_evidence: str
+    running_evidence: str
+    published_tag: str | None
+    published_at: datetime | None
+    workflow_identity: str | None
+
+
+def _immutable_sha_from_image(image: str | None) -> str | None:
+    """Extract an exact immutable Git SHA tag from a container image."""
+    if not image or "@" in image or ":" not in image:
+        return None
+    tag = image.rsplit(":", 1)[1].lower()
+    if len(tag) != 40 or any(character not in "0123456789abcdef" for character in tag):
+        return None
+    return tag
+
+
+def _image_uses_release(image: str | None, release_sha: str | None) -> bool:
+    return bool(release_sha and _immutable_sha_from_image(image) == release_sha)
 
 
 def _display(value: object) -> str:
@@ -68,20 +91,69 @@ def build_deployment_page_state(
         if pipeline_run.kubernetes.pods
         else None,
     )
+    desired_image = pipeline_run.kubernetes.image
+    deployed_release_sha = _immutable_sha_from_image(desired_image)
+    release_sha = deployed_release_sha or (
+        pipeline_run.github.commit_sha
+        if pipeline_run.github.commit_sha in pipeline_run.ghcr.tags
+        else None
+    )
+    desired_confirmed = bool(
+        pipeline_run.kubernetes.availability == "available"
+        and deployed_release_sha
+    )
+    running_confirmed = bool(
+        release_sha
+        and running_pod
+        and running_pod.ready
+        and _image_uses_release(running_pod.image, release_sha)
+    )
+    running_conflict = bool(
+        release_sha
+        and running_pod
+        and running_pod.image
+        and not _image_uses_release(running_pod.image, release_sha)
+    )
+    ghcr_confirmed = bool(
+        release_sha and release_sha in pipeline_run.ghcr.tags
+    )
+    evidence_count = sum(
+        (bool(release_sha), ghcr_confirmed, desired_confirmed, running_confirmed)
+    )
+    correlation_status = (
+        "Conflict detected"
+        if running_conflict
+        else "Correlated"
+        if ghcr_confirmed and desired_confirmed and running_confirmed
+        else "Partially correlated"
+        if evidence_count
+        else "Unknown"
+    )
+    workflow_matches_release = bool(
+        release_sha and pipeline_run.github.commit_sha == release_sha
+    )
     return DeploymentPageState(
         overall_status=_overall_status(pipeline_run),
         replicas=_replica_summary(pipeline_run),
-        correlation_status={
-            "correlated": "Correlated",
-            "partial": "Partially correlated",
-            "unknown": "Unknown",
-        }[pipeline_run.correlation_status],
-        desired_image=pipeline_run.kubernetes.image,
+        correlation_status=correlation_status,
+        desired_image=desired_image,
         running_image=running_pod.image if running_pod else None,
         running_digest=(
             running_pod.image_digest
             if running_pod and running_pod.image_digest
             else pipeline_run.kubernetes.image_digest
+        ),
+        release_sha=release_sha,
+        git_evidence="Confirmed" if release_sha else "Unavailable",
+        ghcr_evidence="Confirmed" if ghcr_confirmed else "Unavailable",
+        desired_evidence="Confirmed" if desired_confirmed else "Unavailable",
+        running_evidence=(
+            "Conflict" if running_conflict else "Confirmed" if running_confirmed else "Unavailable"
+        ),
+        published_tag=release_sha if ghcr_confirmed else None,
+        published_at=pipeline_run.ghcr.published_at if ghcr_confirmed else None,
+        workflow_identity=(
+            _workflow_identity(pipeline_run) if workflow_matches_release else None
         ),
     )
 
@@ -219,7 +291,7 @@ def _render_deployment_summary(
     with release:
         _render_summary_item(
             "Release",
-            _short_release(pipeline_run.commit_sha),
+            _short_release(page_state.release_sha),
             status=page_state.correlation_status,
         )
 
@@ -230,16 +302,6 @@ def _workflow_identity(pipeline_run: PipelineRun) -> str | None:
     if run_number and run_id:
         return f"#{run_number} (ID {run_id})"
     return run_id
-
-
-def _stage_evidence(
-    pipeline_run: PipelineRun,
-    identifier: str,
-) -> str:
-    stage = pipeline_run.stage(identifier)
-    if stage is None:
-        return "Unavailable"
-    return "Confirmed" if stage.status == "Completed" else stage.status
 
 
 def _render_evidence_step(label: str, status: str) -> None:
@@ -258,7 +320,7 @@ def _render_current_release(
             gap="medium",
         )
         with release:
-            _render_field("Release", _short_release(pipeline_run.commit_sha))
+            _render_field("Release", _short_release(page_state.release_sha))
         with correlation:
             _render_status_field(
                 "Artifact correlation",
@@ -267,7 +329,7 @@ def _render_current_release(
         with published:
             _render_field(
                 "Published",
-                format_dashboard_timestamp(pipeline_run.ghcr.published_at),
+                format_dashboard_timestamp(page_state.published_at),
             )
 
         st.caption("Immutable release evidence")
@@ -275,11 +337,11 @@ def _render_current_release(
         evidence = (
             (
                 "Git commit",
-                "Confirmed" if pipeline_run.commit_sha else "Unavailable",
+                page_state.git_evidence,
             ),
-            ("GHCR artifact", _stage_evidence(pipeline_run, "ghcr")),
-            ("Desired deployment", _stage_evidence(pipeline_run, "argocd")),
-            ("Running artifact", _stage_evidence(pipeline_run, "kubernetes")),
+            ("GHCR artifact", page_state.ghcr_evidence),
+            ("Desired deployment", page_state.desired_evidence),
+            ("Running artifact", page_state.running_evidence),
         )
         for column, (label, status) in zip(
             evidence_columns,
@@ -366,16 +428,16 @@ def _render_technical_details(
     with st.expander("Technical Details"):
         release, runtime = st.columns(2, gap="medium")
         with release:
-            _render_field("Full commit SHA", pipeline_run.commit_sha, code=True)
-            _render_field("Workflow run", _workflow_identity(pipeline_run))
-            _render_field("Published GHCR tag", pipeline_run.image_tag, code=True)
+            _render_field("Full commit SHA", page_state.release_sha, code=True)
+            _render_field("Workflow run", page_state.workflow_identity)
+            _render_field("Published GHCR tag", page_state.published_tag, code=True)
             _render_field(
                 "Workflow completed",
                 format_dashboard_timestamp(pipeline_run.github.completed_at),
             )
             _render_field(
                 "Image published",
-                format_dashboard_timestamp(pipeline_run.ghcr.published_at),
+                format_dashboard_timestamp(page_state.published_at),
             )
             _render_field(
                 "Target revision",
