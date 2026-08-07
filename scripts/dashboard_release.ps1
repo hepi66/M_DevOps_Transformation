@@ -143,21 +143,64 @@ function Get-RepositoryState {
     }
 }
 
-function Get-SuccessfulWorkflowRun {
-    param([string]$CommitSha)
-
+function Get-CiWorkflowRuns {
     $json = (Invoke-Native -Command "gh" -Arguments @(
         "run", "list",
         "--repo", $Repository,
         "--workflow", "CI Pipeline",
-        "--branch", "main",
-        "--status", "success",
-        "--limit", "50",
-        "--json", "databaseId,headSha,status,conclusion,url,createdAt"
+        "--limit", "100",
+        "--json", "databaseId,headSha,headBranch,status,conclusion,event,workflowName,url,createdAt"
     )) | Out-String
     $decodedRuns = $json | ConvertFrom-Json
-    $runs = [object[]]$decodedRuns
-    $run = $runs | Where-Object { $_.headSha -eq $CommitSha } | Select-Object -First 1
+    return [object[]]$decodedRuns
+}
+
+function Select-ValidCiRun {
+    param(
+        [object[]]$Runs,
+        [AllowNull()][string]$CommitSha
+    )
+
+    if ($CommitSha) {
+        Assert-FullSha -Sha $CommitSha -Description "CI commit"
+    }
+    $matches = @($Runs | Where-Object {
+        $workflowName = [string](Get-ObjectProperty -Object $_ -Name "workflowName")
+        $headSha = [string](Get-ObjectProperty -Object $_ -Name "headSha")
+        $headBranch = [string](Get-ObjectProperty -Object $_ -Name "headBranch")
+        $conclusion = [string](Get-ObjectProperty -Object $_ -Name "conclusion")
+        $status = [string](Get-ObjectProperty -Object $_ -Name "status")
+        $event = [string](Get-ObjectProperty -Object $_ -Name "event")
+        (
+            $workflowName -ceq "CI Pipeline" -and
+            (-not $CommitSha -or $headSha -ceq $CommitSha) -and
+            $conclusion -ceq "success" -and
+            $status -ceq "completed" -and
+            $event -ceq "push" -and
+            (-not $headBranch -or $headBranch -ceq "main")
+        )
+    })
+    if ($matches.Count -eq 0) {
+        return $null
+    }
+    return $matches | Sort-Object -Property @(
+        @{
+            Expression = {
+                $createdAt = [string](Get-ObjectProperty -Object $_ -Name "createdAt")
+                try { [DateTimeOffset]::Parse($createdAt) }
+                catch { [DateTimeOffset]::MinValue }
+            }
+            Descending = $true
+        },
+        @{ Expression = { [long](Get-ObjectProperty -Object $_ -Name "databaseId") }; Descending = $true }
+    ) | Select-Object -First 1
+}
+
+function Get-SuccessfulWorkflowRun {
+    param([string]$CommitSha)
+
+    Assert-FullSha -Sha $CommitSha -Description "CI commit"
+    $run = Select-ValidCiRun -Runs (Get-CiWorkflowRuns) -CommitSha $CommitSha
     if ($null -eq $run) {
         throw "No successful CI Pipeline run on main was found for commit $CommitSha. CI success is required before artifact promotion."
     }
@@ -165,18 +208,7 @@ function Get-SuccessfulWorkflowRun {
 }
 
 function Get-LatestSuccessfulWorkflowRun {
-    $json = (Invoke-Native -Command "gh" -Arguments @(
-        "run", "list",
-        "--repo", $Repository,
-        "--workflow", "CI Pipeline",
-        "--branch", "main",
-        "--status", "success",
-        "--limit", "1",
-        "--json", "databaseId,headSha,status,conclusion,url,createdAt"
-    )) | Out-String
-    $decodedRuns = $json | ConvertFrom-Json
-    $runs = [object[]]$decodedRuns
-    $run = $runs | Select-Object -First 1
+    $run = Select-ValidCiRun -Runs (Get-CiWorkflowRuns) -CommitSha $null
     if ($null -eq $run) {
         throw "No successful CI Pipeline run on main is currently available."
     }
