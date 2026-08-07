@@ -43,13 +43,36 @@ function Invoke-Native {
         [switch]$AllowFailure
     )
 
-    $output = & $Command @Arguments 2>&1
-    $exitCode = $LASTEXITCODE
+    if (-not (Get-Command $Command -ErrorAction SilentlyContinue)) {
+        throw "Required command '$Command' is not available on PATH."
+    }
+
+    # Windows PowerShell surfaces native stderr records through its error
+    # stream. Git, gh, and kubectl may legitimately write informational output
+    # there even when they succeed, so capture both streams without allowing
+    # ErrorActionPreference=Stop to preempt the authoritative process exit code.
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $rawOutput = & $Command @Arguments 2>&1
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    $output = @($rawOutput | ForEach-Object {
+        if ($_ -is [System.Management.Automation.ErrorRecord]) {
+            $_.Exception.Message
+        }
+        else {
+            $_
+        }
+    })
     if ($exitCode -ne 0 -and -not $AllowFailure) {
         $message = ($output | Out-String).Trim()
         throw "Command failed: $Command $($Arguments -join ' ')`n$message"
     }
-    return ,$output
+    return $output
 }
 
 function Get-ObjectProperty {
@@ -132,7 +155,8 @@ function Get-SuccessfulWorkflowRun {
         "--limit", "50",
         "--json", "databaseId,headSha,status,conclusion,url,createdAt"
     )) | Out-String
-    $runs = @($json | ConvertFrom-Json)
+    $decodedRuns = $json | ConvertFrom-Json
+    $runs = [object[]]$decodedRuns
     $run = $runs | Where-Object { $_.headSha -eq $CommitSha } | Select-Object -First 1
     if ($null -eq $run) {
         throw "No successful CI Pipeline run on main was found for commit $CommitSha. CI success is required before artifact promotion."
@@ -150,7 +174,8 @@ function Get-LatestSuccessfulWorkflowRun {
         "--limit", "1",
         "--json", "databaseId,headSha,status,conclusion,url,createdAt"
     )) | Out-String
-    $runs = @($json | ConvertFrom-Json)
+    $decodedRuns = $json | ConvertFrom-Json
+    $runs = [object[]]$decodedRuns
     $run = $runs | Select-Object -First 1
     if ($null -eq $run) {
         throw "No successful CI Pipeline run on main is currently available."
