@@ -1,6 +1,9 @@
 import streamlit as st
 
-from dashboard.deployment_page import render_deployment_page
+from dashboard.deployment_page import (
+    deployment_monitoring_status_text,
+    render_deployment_page,
+)
 from dashboard.deployments import render_deployments
 from dashboard.environments import render_environments
 from dashboard.layout import (
@@ -79,6 +82,10 @@ def render_deployment_page_fragment() -> None:
     if render_monitoring_status(
         monitoring_state,
         automatic=live_refresh,
+        status_text=deployment_monitoring_status_text(
+            monitoring_state,
+            automatic=live_refresh,
+        ),
     ):
         request_monitoring_refresh()
         st.rerun()

@@ -160,6 +160,41 @@ def test_unavailable_and_missing_runtime_identity_are_safe():
     assert page_state.running_digest is None
 
 
+def test_partial_release_correlation_remains_visible():
+    snapshot = _snapshot()
+    snapshot["argocd"] = {
+        "availability": "unavailable",
+        "reason": "Provider unavailable",
+    }
+    snapshot["kubernetes"] = {
+        "availability": "unavailable",
+        "reason": "Provider unavailable",
+    }
+
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(snapshot)
+    )
+
+    assert page_state.correlation_status == "Partially correlated"
+
+
+def test_partial_monitoring_status_names_available_providers():
+    snapshot = _snapshot()
+    snapshot["argocd"] = {
+        "availability": "unavailable",
+        "reason": "Provider unavailable",
+    }
+    state = _monitoring_state(snapshot)
+
+    status = deployment_page.deployment_monitoring_status_text(state)
+
+    assert status.startswith("Partial live data")
+    assert "GitHub" in status
+    assert "GHCR" in status
+    assert "Kubernetes" in status
+    assert "Argo CD" not in status
+
+
 def test_pod_and_runtime_information_remain_normalized():
     pipeline_run = aggregate_pipeline_run(_snapshot())
     kubernetes = pipeline_run.kubernetes
@@ -175,10 +210,11 @@ def test_pod_and_runtime_information_remain_normalized():
 
 def test_deployment_page_renders_all_sections(monkeypatch):
     section_names = (
-        "_render_current_deployment",
-        "_render_release_identity",
+        "_render_deployment_summary",
+        "_render_current_release",
         "_render_gitops_status",
         "_render_kubernetes_runtime",
+        "_render_technical_details",
         "_render_access",
         "_render_deployment_journey",
     )
@@ -204,9 +240,32 @@ def test_deployment_page_renders_all_sections(monkeypatch):
     caption.assert_called_once_with("Monitoring snapshot: formatted snapshot time")
 
 
+def test_technical_details_remain_available_in_expander(monkeypatch):
+    fake_streamlit = MagicMock()
+    fake_streamlit.columns.return_value = [MagicMock(), MagicMock()]
+    monkeypatch.setattr(deployment_page, "st", fake_streamlit)
+
+    pipeline_run = aggregate_pipeline_run(_snapshot())
+    page_state = deployment_page.build_deployment_page_state(pipeline_run)
+    deployment_page._render_technical_details(pipeline_run, page_state)
+
+    fake_streamlit.expander.assert_called_once_with("Technical Details")
+    rendered_code_values = {
+        call.args[0] for call in fake_streamlit.code.call_args_list
+    }
+    assert COMMIT_SHA in rendered_code_values
+    assert IMAGE in rendered_code_values
+    assert DIGEST in rendered_code_values
+
+
 def test_access_section_is_explicit_and_does_not_start_port_forward(monkeypatch):
     fake_streamlit = MagicMock()
-    fake_streamlit.columns.return_value = [MagicMock(), MagicMock(), MagicMock()]
+    fake_streamlit.columns.return_value = [
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+    ]
     monkeypatch.setattr(deployment_page, "st", fake_streamlit)
     monkeypatch.setattr(deployment_page, "render_component_header", Mock())
 
@@ -223,4 +282,18 @@ def test_access_section_is_explicit_and_does_not_start_port_forward(monkeypatch)
     explanation = fake_streamlit.info.call_args.args[0]
     assert "already-running ClusterIP Service" in explanation
     assert "does not start or deploy" in explanation
+    assert "only while a suitable port-forward is active" in explanation
     assert not hasattr(deployment_page, "subprocess")
+
+
+def test_deployment_journey_remains_available_in_expander(monkeypatch):
+    fake_streamlit = MagicMock()
+    monkeypatch.setattr(deployment_page, "st", fake_streamlit)
+
+    deployment_page._render_deployment_journey()
+
+    fake_streamlit.expander.assert_called_once_with("Deployment Journey")
+    journey = fake_streamlit.markdown.call_args.args[0]
+    assert "GitHub Actions" in journey
+    assert "Immutable SHA Promotion" in journey
+    assert "Kubernetes Deployment" in journey
