@@ -110,6 +110,26 @@ Invoke-WebRequest http://127.0.0.1:8501/_stcore/health
 
 The expected health response has HTTP status `200`. Port-forwarding only exposes the already-running ClusterIP Service to the local host; it does not start or deploy the application. Stop port-forwarding with `Ctrl+C` after verification without affecting the running workload.
 
+## Dashboard Release Helper
+
+The manual release process in this guide remains the deployment architecture
+and source of truth. The PowerShell helper automates the repeated operator
+checks and commands without removing PR review, merge, or explicit deployment
+approval:
+
+```powershell
+.\scripts\dashboard_release.ps1 -Mode Status
+.\scripts\dashboard_release.ps1 -Mode Promote
+.\scripts\dashboard_release.ps1 -Mode Deploy
+```
+
+`Status` is read-only. `Promote` verifies the successful `main` workflow and
+matching immutable GHCR artifact before preparing an image-only GitOps change.
+`Deploy` verifies the merged desired state and GHCR artifact, then requires an
+explicit confirmation before synchronizing the manually managed child
+Application. The helper never merges a pull request or enables automatic Argo
+CD synchronization.
+
 The dashboard can start without GitHub or GHCR credentials. Providers that
 cannot authenticate retain their established unavailable or demonstration
 behavior. Argo CD and Kubernetes observations use in-cluster ServiceAccount

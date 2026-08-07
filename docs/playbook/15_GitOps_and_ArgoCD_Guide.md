@@ -92,8 +92,6 @@ ArgoCD does not build software.
 
 ArgoCD deploys configuration.
 
----
-
 # Platform GitOps Architecture
 
 Validated architecture:

@@ -331,6 +331,7 @@ def render_monitoring_status(
     state: MonitoringState,
     *,
     automatic: bool = True,
+    status_text: str | None = None,
 ) -> bool:
     """Render refresh state and return whether manual refresh was requested."""
     status_column, updated_column, action_column = st.columns(
@@ -339,7 +340,7 @@ def render_monitoring_status(
         vertical_alignment="center",
     )
     status_column.caption(
-        monitoring_status_text(state, automatic=automatic)
+        status_text or monitoring_status_text(state, automatic=automatic)
     )
     updated_column.caption(
         "Last updated: "
