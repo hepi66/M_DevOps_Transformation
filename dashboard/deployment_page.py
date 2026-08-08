@@ -309,6 +309,46 @@ def _render_evidence_step(label: str, status: str) -> None:
     _render_status_badge(status)
 
 
+def release_correlation_explanation(
+    page_state: DeploymentPageState,
+) -> tuple[str, str] | None:
+    """Summarize incomplete release evidence without changing its semantics."""
+    evidence = (
+        ("Git commit", page_state.git_evidence),
+        ("GHCR artifact", page_state.ghcr_evidence),
+        ("Desired deployment", page_state.desired_evidence),
+        ("Running artifact", page_state.running_evidence),
+    )
+    if all(status == "Confirmed" for _, status in evidence):
+        return None
+
+    confirmed = sum(status == "Confirmed" for _, status in evidence)
+    conflicts = [label for label, status in evidence if status == "Conflict"]
+    unavailable = [
+        label for label, status in evidence if status == "Unavailable"
+    ]
+    summary = f"{confirmed} of {len(evidence)} release signals confirmed"
+    if conflicts:
+        return "conflict", f"{summary} · Conflict: {', '.join(conflicts)}"
+    if unavailable:
+        return (
+            "unavailable",
+            f"{summary} · Unavailable: {', '.join(unavailable)}",
+        )
+    return "unavailable", summary
+
+
+def _render_correlation_explanation(page_state: DeploymentPageState) -> None:
+    explanation = release_correlation_explanation(page_state)
+    if explanation is None:
+        return
+    kind, message = explanation
+    if kind == "conflict":
+        st.error(message)
+    else:
+        st.caption(f"ℹ {message}")
+
+
 def _render_current_release(
     pipeline_run: PipelineRun,
     page_state: DeploymentPageState,
@@ -350,6 +390,7 @@ def _render_current_release(
         ):
             with column:
                 _render_evidence_step(label, status)
+        _render_correlation_explanation(page_state)
 
 
 def _render_gitops_status(pipeline_run: PipelineRun) -> None:

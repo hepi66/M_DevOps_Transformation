@@ -78,6 +78,14 @@ OPERATIONAL_SOURCE_LEGEND = tuple(
     (source, definition["label"])
     for source, definition in OPERATIONAL_SOURCES.items()
 )
+STATUS_LEGEND = (
+    ("&#10003;", "Success"),
+    ("&#9654;", "Running"),
+    ("&#9719;", "Queued"),
+    ("&#9888;", "Warning"),
+    ("&#10005;", "Failed"),
+    ("&mdash;", "Skipped/Cancelled"),
+)
 
 
 def render_page_header(title: str, description: str) -> None:
@@ -212,10 +220,15 @@ def render_data_source_indicator(data_source_state: str, container=st) -> None:
 
 
 def render_dashboard_footer() -> None:
-    """Render the single-line dashboard legend and stable build information."""
+    """Render a responsive dashboard legend and stable build information."""
     build_information = html.escape(BUILD_INFORMATION)
-    source_legend = " · ".join(
-        f"{html.escape(abbreviation)} {html.escape(name)}"
+    status_legend = "".join(
+        f'<span class="dashboard-footer-item">{symbol} {label}</span>'
+        for symbol, label in STATUS_LEGEND
+    )
+    source_legend = "".join(
+        '<span class="dashboard-footer-item">'
+        f"{html.escape(abbreviation)} {html.escape(name)}</span>"
         for abbreviation, name in OPERATIONAL_SOURCE_LEGEND
     )
     st.html(
@@ -224,15 +237,31 @@ def render_dashboard_footer() -> None:
 .dashboard-footer-line {{
     display: flex;
     align-items: center;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
     width: 100%;
-    white-space: nowrap;
     color: rgba(128, 128, 128, 0.95);
     font-size: 0.7rem;
     line-height: 1.35;
 }}
-.dashboard-footer-line .dashboard-footer-legend {{
-    flex: 1 1 auto;
+.dashboard-footer-legends {{
+    display: flex;
+    flex: 1 1 42rem;
+    flex-wrap: wrap;
+    gap: 0.45rem 1.25rem;
+    min-width: 0;
+}}
+.dashboard-footer-group {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.7rem;
+}}
+.dashboard-footer-group-label {{
+    font-weight: 600;
+    color: rgba(160, 160, 160, 0.95);
+}}
+.dashboard-footer-item {{
+    white-space: nowrap;
 }}
 .dashboard-footer-line .dashboard-footer-build {{
     flex: 0 0 auto;
@@ -241,7 +270,22 @@ def render_dashboard_footer() -> None:
 }}
 </style>
 <div class="dashboard-footer-line" role="contentinfo">
-  <span class="dashboard-footer-legend">✓ Success · ▶ Running · ◷ Queued · ⚠ Warning · ✕ Failed · — Skipped/Cancelled · ℹ Info | {source_legend} | 🧪 DEMO · 💻 LOCAL · 📡 LIVE</span>
+  <div class="dashboard-footer-legends">
+    <div class="dashboard-footer-group" aria-label="Status legend">
+      <span class="dashboard-footer-group-label">Status</span>
+      {status_legend}
+    </div>
+    <div class="dashboard-footer-group" aria-label="Source legend">
+      <span class="dashboard-footer-group-label">Sources</span>
+      {source_legend}
+    </div>
+    <div class="dashboard-footer-group" aria-label="Data source legend">
+      <span class="dashboard-footer-group-label">Data</span>
+      <span class="dashboard-footer-item">DEMO</span>
+      <span class="dashboard-footer-item">LOCAL</span>
+      <span class="dashboard-footer-item">LIVE</span>
+    </div>
+  </div>
   <span class="dashboard-footer-build">Build {build_information}</span>
 </div>
 """

@@ -212,6 +212,48 @@ def test_missing_deployed_ghcr_tag_remains_unavailable():
     assert page_state.correlation_status == "Partially correlated"
 
 
+def test_complete_correlation_has_no_explanatory_warning():
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(_snapshot())
+    )
+
+    assert deployment_page.release_correlation_explanation(page_state) is None
+
+
+def test_partial_correlation_explains_confirmed_and_unavailable_evidence():
+    snapshot = _snapshot()
+    snapshot["ghcr"]["tags"] = ["latest"]
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(snapshot)
+    )
+
+    explanation = deployment_page.release_correlation_explanation(page_state)
+
+    assert explanation == (
+        "unavailable",
+        "3 of 4 release signals confirmed · Unavailable: GHCR artifact",
+    )
+
+
+def test_conflict_explanation_is_distinct_from_unavailable_evidence():
+    snapshot = _snapshot()
+    snapshot["ghcr"]["tags"] = ["latest"]
+    snapshot["kubernetes"]["pods"][0]["image"] = (
+        f"ghcr.io/hepi66/m_devops_transformation:{'a' * 40}"
+    )
+    page_state = deployment_page.build_deployment_page_state(
+        aggregate_pipeline_run(snapshot)
+    )
+
+    explanation = deployment_page.release_correlation_explanation(page_state)
+
+    assert explanation == (
+        "conflict",
+        "2 of 4 release signals confirmed · Conflict: Running artifact",
+    )
+    assert "Unavailable" not in explanation[1]
+
+
 def test_short_or_unrelated_ghcr_tag_does_not_confirm_release():
     snapshot = _snapshot()
     snapshot["ghcr"]["tags"] = [COMMIT_SHA[:7], "c" * 40]

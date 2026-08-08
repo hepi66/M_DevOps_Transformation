@@ -15,6 +15,7 @@ from dashboard.layout import (
     OPERATIONAL_SOURCE_LEGEND,
     PIPELINE_CONTEXT_ACCENT,
     SEMANTIC_STATUS_COLORS,
+    STATUS_LEGEND,
     STATUS_PRESENTATION,
     status_presentation,
 )
@@ -1396,6 +1397,23 @@ def test_footer_legend_contains_docker_build():
     assert ("CR", "GHCR") in OPERATIONAL_SOURCE_LEGEND
     assert ("CD", "Argo CD") in OPERATIONAL_SOURCE_LEGEND
     assert ("K8", "Kubernetes") in OPERATIONAL_SOURCE_LEGEND
+
+
+def test_footer_legend_groups_expected_status_and_source_concepts(monkeypatch):
+    html_output = Mock()
+    monkeypatch.setattr(layout.st, "html", html_output)
+
+    layout.render_dashboard_footer()
+
+    rendered = html_output.call_args.args[0]
+    for _symbol, label in STATUS_LEGEND:
+        assert label in rendered
+    for abbreviation, label in OPERATIONAL_SOURCE_LEGEND:
+        assert f"{abbreviation} {label}" in rendered
+    assert 'aria-label="Status legend"' in rendered
+    assert 'aria-label="Source legend"' in rendered
+    assert "flex-wrap: wrap" in rendered
+    assert "white-space: nowrap" in rendered
 
 
 def test_build_pipeline_interaction_selects_build_stage(monkeypatch):
