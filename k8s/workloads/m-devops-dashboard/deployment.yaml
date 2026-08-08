@@ -30,7 +30,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: dashboard
-          image: ghcr.io/hepi66/m_devops_transformation:24bbb18469537f07786c5289bebc7c4e0c95d0ca
+          image: ghcr.io/hepi66/m_devops_transformation:3a609bb041910cf516fe6fc0161902ab5e6aac90
           imagePullPolicy: Always
           ports:
             - name: http
