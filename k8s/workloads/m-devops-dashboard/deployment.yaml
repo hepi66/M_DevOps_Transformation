@@ -39,6 +39,16 @@ spec:
           env:
             - name: DASHBOARD_HISTORY_DB_PATH
               value: /data/dashboard_history.db
+            - name: GITHUB_REPOSITORY
+              value: hepi66/M_DevOps_Transformation
+            - name: GITHUB_BRANCH
+              value: main
+            - name: GH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: m-devops-dashboard-github
+                  key: token
+                  optional: true
           volumeMounts:
             - name: dashboard-history
               mountPath: /data

@@ -33,6 +33,8 @@ from dashboard.pipeline_context import (
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+GITHUB_REPOSITORY_ENVIRONMENT_VARIABLE = "GITHUB_REPOSITORY"
+GITHUB_BRANCH_ENVIRONMENT_VARIABLE = "GITHUB_BRANCH"
 
 EVENT_STATE_STYLES = {
     "INFO": ("ℹ", "blue"),
@@ -214,6 +216,36 @@ def _get_synchronization_state() -> str:
         return f"In sync with {upstream}"
 
     return f"Ahead {ahead}, behind {behind} compared with {upstream}"
+
+
+def _github_runtime_context() -> tuple[str | None, str | None, str | None]:
+    """Resolve explicit Kubernetes context or preserve local Git discovery."""
+    repository = os.environ.get(
+        GITHUB_REPOSITORY_ENVIRONMENT_VARIABLE,
+        "",
+    ).strip()
+    branch = os.environ.get(
+        GITHUB_BRANCH_ENVIRONMENT_VARIABLE,
+        "",
+    ).strip()
+
+    if repository and not re.fullmatch(
+        r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+",
+        repository,
+    ):
+        return None, None, "Configured GitHub repository is invalid."
+
+    if not repository:
+        remote = _run_git_command("remote", "get-url", "origin")
+        if not remote or "github.com" not in remote.lower():
+            return None, None, "GitHub remote is unavailable."
+
+    if not branch:
+        branch = _run_git_command("branch", "--show-current") or ""
+    if not branch:
+        return None, None, "GitHub branch is unavailable."
+
+    return repository or None, branch, None
 
 
 def _classify_github_status(
@@ -502,6 +534,7 @@ def _build_operational_events(
 def _load_github_actions_details(
     runs: list[dict[str, Any]],
     workflow_name: str,
+    repository: str | None = None,
 ) -> dict[str, Any]:
     workflow = next(
         (
@@ -523,13 +556,11 @@ def _load_github_actions_details(
             "reason": "The workflow run identifier is unavailable.",
         }
 
-    run_details = _run_gh_json(
-        "run",
-        "view",
-        str(workflow["databaseId"]),
-        "--json",
-        "jobs",
-    )
+    arguments = ["run", "view", str(workflow["databaseId"])]
+    if repository:
+        arguments.extend(("--repo", repository))
+    arguments.extend(("--json", "jobs"))
+    run_details = _run_gh_json(*arguments)
     jobs = run_details.get("jobs") if isinstance(run_details, dict) else None
     if not isinstance(jobs, list):
         return {
@@ -695,9 +726,9 @@ def _load_ghcr_package(repository: dict[str, Any]) -> dict[str, Any]:
 
 @st.cache_data(ttl=60, show_spinner=False)
 def _load_github_status() -> dict[str, Any]:
-    remote = _run_git_command("remote", "get-url", "origin")
-    if not remote or "github.com" not in remote.lower():
-        return {"state": "Not available", "reason": "GitHub remote is unavailable."}
+    repository_target, branch, context_error = _github_runtime_context()
+    if context_error:
+        return {"state": "Not available", "reason": context_error}
 
     if _run_gh_command("auth", "status") is None:
         return {
@@ -709,27 +740,33 @@ def _load_github_status() -> dict[str, Any]:
             },
         }
 
-    repository = _run_gh_json(
-        "repo",
-        "view",
-        "--json",
-        "name,nameWithOwner,owner,url",
+    repository_arguments = ["repo", "view"]
+    if repository_target:
+        repository_arguments.append(repository_target)
+    repository_arguments.extend(
+        ("--json", "name,nameWithOwner,owner,url")
     )
-    branch = _run_git_command("branch", "--show-current")
-    if not isinstance(repository, dict) or not branch:
+    repository = _run_gh_json(*repository_arguments)
+    if not isinstance(repository, dict):
         return {"state": "Not available", "reason": "GitHub repository could not be resolved."}
 
-    raw_runs = _run_gh_json(
-        "run",
-        "list",
-        "--branch",
-        branch,
-        "--limit",
-        "5",
-        "--json",
-        "databaseId,number,name,displayTitle,status,conclusion,"
-        "createdAt,startedAt,updatedAt,url,headBranch,headSha",
+    run_arguments = ["run", "list"]
+    if repository_target:
+        run_arguments.extend(("--repo", repository_target))
+    run_arguments.extend(
+        (
+            "--branch",
+            branch,
+            "--limit",
+            "5",
+            "--json",
+            (
+                "databaseId,number,name,displayTitle,status,conclusion,"
+                "createdAt,startedAt,updatedAt,url,headBranch,headSha"
+            ),
+        )
     )
+    raw_runs = _run_gh_json(*run_arguments)
     runs = (
         [
             _normalize_execution_timestamps(run)
@@ -744,6 +781,7 @@ def _load_github_status() -> dict[str, Any]:
         _load_github_actions_details(
             runs,
             workflow_name="CI Pipeline",
+            repository=repository_target,
         )
         if isinstance(runs, list)
         else {
@@ -758,18 +796,25 @@ def _load_github_status() -> dict[str, Any]:
     )
     ghcr = _load_ghcr_package(repository)
 
-    pull_requests = _run_gh_json(
-        "pr",
-        "list",
-        "--head",
-        branch,
-        "--state",
-        "open",
-        "--limit",
-        "1",
-        "--json",
-        "number,title,reviewDecision,mergeStateStatus,url,createdAt,updatedAt,statusCheckRollup",
+    pull_request_arguments = ["pr", "list"]
+    if repository_target:
+        pull_request_arguments.extend(("--repo", repository_target))
+    pull_request_arguments.extend(
+        (
+            "--head",
+            branch,
+            "--state",
+            "open",
+            "--limit",
+            "1",
+            "--json",
+            (
+                "number,title,reviewDecision,mergeStateStatus,url,createdAt,"
+                "updatedAt,statusCheckRollup"
+            ),
+        )
     )
+    pull_requests = _run_gh_json(*pull_request_arguments)
     pull_request = (
         pull_requests[0]
         if isinstance(pull_requests, list) and pull_requests

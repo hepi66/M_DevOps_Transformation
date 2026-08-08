@@ -14,6 +14,7 @@ def _read(path: Path) -> str:
 def test_docker_runs_dashboard_on_expected_interface_and_port():
     dockerfile = _read(REPOSITORY_ROOT / "Dockerfile")
 
+    assert "apt-get install -y --no-install-recommends gh" in dockerfile
     assert "EXPOSE 8501" in dockerfile
     assert '"dashboard_app.py"' in dockerfile
     assert '"--server.address=0.0.0.0"' in dockerfile
@@ -48,6 +49,17 @@ def test_deployment_uses_ci_image_and_runtime_contract():
     assert "requests:" in deployment
     assert "limits:" in deployment
     assert "namespace: m-devops-dashboard" in deployment
+
+
+def test_deployment_configures_explicit_github_runtime_context():
+    deployment = _read(WORKLOAD_ROOT / "deployment.yaml")
+
+    assert "name: GITHUB_REPOSITORY\n              value: hepi66/M_DevOps_Transformation" in deployment
+    assert "name: GITHUB_BRANCH\n              value: main" in deployment
+    assert "name: GH_TOKEN" in deployment
+    assert "name: m-devops-dashboard-github" in deployment
+    assert "key: token" in deployment
+    assert "optional: true" in deployment
 
 
 def test_service_selector_and_port_match_deployment():
