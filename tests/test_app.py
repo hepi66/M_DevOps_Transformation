@@ -881,6 +881,9 @@ def test_refresh_button_invalidates_snapshot_and_reruns(monkeypatch):
 
 
 def test_ghcr_retrieval_reuses_cached_github_snapshot(monkeypatch):
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    monkeypatch.delenv("GITHUB_BRANCH", raising=False)
+
     def git_command(*arguments):
         if arguments == ("remote", "get-url", "origin"):
             return "https://github.com/example/repository.git"
@@ -922,6 +925,182 @@ def test_ghcr_retrieval_reuses_cached_github_snapshot(monkeypatch):
 
     assert first["ghcr"] == second["ghcr"]
     ghcr_loader.assert_called_once()
+
+
+def test_explicit_github_runtime_context_avoids_local_git(monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "hepi66/M_DevOps_Transformation")
+    monkeypatch.setenv("GITHUB_BRANCH", "main")
+    git_command = Mock(side_effect=AssertionError("git must not be required"))
+    monkeypatch.setattr(viewer, "_run_git_command", git_command)
+
+    repository, branch, error = viewer._github_runtime_context()
+
+    assert repository == "hepi66/M_DevOps_Transformation"
+    assert branch == "main"
+    assert error is None
+    git_command.assert_not_called()
+
+
+def test_local_github_runtime_context_preserves_git_fallback(monkeypatch):
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    monkeypatch.delenv("GITHUB_BRANCH", raising=False)
+    git_command = Mock(
+        side_effect=[
+            "https://github.com/example/repository.git",
+            "main",
+        ]
+    )
+    monkeypatch.setattr(viewer, "_run_git_command", git_command)
+
+    repository, branch, error = viewer._github_runtime_context()
+
+    assert repository is None
+    assert branch == "main"
+    assert error is None
+    assert git_command.call_args_list == [
+        (("remote", "get-url", "origin"), {}),
+        (("branch", "--show-current"), {}),
+    ]
+
+
+def test_missing_runtime_context_degrades_without_fabricated_evidence(monkeypatch):
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    monkeypatch.delenv("GITHUB_BRANCH", raising=False)
+    monkeypatch.setattr(viewer, "_run_git_command", Mock(return_value=None))
+    viewer._load_github_status.clear()
+
+    try:
+        snapshot = viewer._load_github_status()
+    finally:
+        viewer._load_github_status.clear()
+
+    pipeline_run = aggregate_pipeline_run(snapshot)
+    assert snapshot == {
+        "state": "Not available",
+        "reason": "GitHub remote is unavailable.",
+    }
+    assert all(
+        pipeline_run.stage(identifier).status in {"Unknown", "Unavailable"}
+        for identifier in ("github", "ci", "build", "ghcr")
+    )
+
+
+def test_explicit_runtime_context_reaches_existing_pipeline(monkeypatch):
+    repository_name = "hepi66/M_DevOps_Transformation"
+    monkeypatch.setenv("GITHUB_REPOSITORY", repository_name)
+    monkeypatch.setenv("GITHUB_BRANCH", "main")
+    monkeypatch.setattr(
+        viewer,
+        "_run_git_command",
+        Mock(side_effect=AssertionError("git must not be required")),
+    )
+    monkeypatch.setattr(viewer, "_run_gh_command", Mock(return_value="ok"))
+
+    workflow = {
+        "databaseId": 82,
+        "number": 12,
+        "name": "CI Pipeline",
+        "status": "completed",
+        "conclusion": "success",
+        "headBranch": "main",
+        "headSha": "a" * 40,
+        "updatedAt": "2026-08-08T08:00:00Z",
+    }
+    commands = []
+
+    def gh_json(*arguments):
+        commands.append(arguments)
+        if arguments[:2] == ("repo", "view"):
+            return {
+                "name": "M_DevOps_Transformation",
+                "nameWithOwner": repository_name,
+                "owner": {"login": "hepi66"},
+                "url": f"https://github.com/{repository_name}",
+            }
+        if arguments[:2] == ("run", "list"):
+            return [workflow]
+        if arguments[:2] == ("run", "view"):
+            return {
+                "jobs": [
+                    {
+                        "name": "build",
+                        "status": "completed",
+                        "conclusion": "success",
+                        "steps": [
+                            {
+                                "name": "Build and push",
+                                "status": "completed",
+                                "conclusion": "success",
+                            }
+                        ],
+                    }
+                ]
+            }
+        if arguments[:2] == ("pr", "list"):
+            return []
+        return None
+
+    monkeypatch.setattr(viewer, "_run_gh_json", gh_json)
+    monkeypatch.setattr(
+        viewer,
+        "_load_ghcr_package",
+        Mock(
+            return_value={
+                "availability": "available",
+                    "status": "completed",
+                    "image_name": "ghcr.io/hepi66/m_devops_transformation",
+                    "latest_tag": "latest",
+                    "tags": ["a" * 40, "latest"],
+                }
+            ),
+    )
+    viewer._load_github_status.clear()
+
+    try:
+        snapshot = viewer._load_github_status()
+    finally:
+        viewer._load_github_status.clear()
+
+    pipeline_run = aggregate_pipeline_run(snapshot)
+    assert snapshot["repository"] == repository_name
+    assert snapshot["github_actions"]["availability"] == "available"
+    assert snapshot["docker_build"]["availability"] == "available"
+    assert snapshot["ghcr"]["availability"] == "available"
+    assert pipeline_run.stage("github").status == "Completed"
+    assert pipeline_run.stage("ci").status == "Completed"
+    assert pipeline_run.stage("build").status == "Completed"
+    assert pipeline_run.stage("ghcr").status == "Completed"
+    assert ("repo", "view", repository_name, "--json", "name,nameWithOwner,owner,url") in commands
+    assert any(
+        command[:4] == ("run", "list", "--repo", repository_name)
+        for command in commands
+    )
+    assert (
+        "run",
+        "view",
+        "82",
+        "--repo",
+        repository_name,
+        "--json",
+        "jobs",
+    ) in commands
+
+
+def test_missing_github_token_remains_gracefully_unavailable(monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "hepi66/M_DevOps_Transformation")
+    monkeypatch.setenv("GITHUB_BRANCH", "main")
+    monkeypatch.setattr(viewer, "_run_gh_command", Mock(return_value=None))
+    viewer._load_github_status.clear()
+
+    try:
+        snapshot = viewer._load_github_status()
+    finally:
+        viewer._load_github_status.clear()
+
+    assert snapshot["state"] == "Not available"
+    assert "github_actions" not in snapshot
+    assert "docker_build" not in snapshot
+    assert snapshot["ghcr"]["availability"] == "authentication_unavailable"
 
 
 def test_operational_event_classification_keeps_lifecycle_prominent():

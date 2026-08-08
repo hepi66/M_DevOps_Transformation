@@ -149,12 +149,19 @@ No ClusterRole, cluster-admin permission, Secret read permission, or write
 verb is granted.
 
 GitHub authentication remains optional and uses the existing GitHub CLI
-mechanism where that CLI is available. `gh` recognizes `GH_TOKEN`, so an
-environment-specific deployment may source that variable from a Kubernetes
-Secret managed outside this repository. The current slim dashboard image does
-not install the GitHub CLI; its in-cluster lifecycle reconstruction therefore
-uses Argo CD and Kubernetes evidence when GitHub retrieval is unavailable.
-Never store token values in this repository.
+mechanism. The runtime image includes `gh`, while `GITHUB_REPOSITORY` and
+`GITHUB_BRANCH` provide repository context without copying `.git` into the
+image. `GH_TOKEN` is sourced from the optional
+`m-devops-dashboard-github/token` Secret, which is managed outside this
+repository. Without that Secret, GitHub-side observations remain explicitly
+unavailable and the dashboard continues to start.
+
+For the current public repository, the minimum practical classic token scope
+is `read:packages`: repository metadata and public Actions runs are read-only,
+while the existing GHCR package/version endpoints require package-read access.
+If the repository becomes private, additional repository read access is also
+required. Do not grant write scopes and never store token values in this
+repository.
 
 ## Fragment Refresh Verification
 
