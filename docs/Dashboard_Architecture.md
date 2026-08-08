@@ -158,6 +158,37 @@ When a retrieval attempt raises an error, the last successful observation is
 retained with its timestamp and the monitoring status reports the retry
 schedule. Provider failures remain isolated from the complete dashboard.
 
+### Historical Telemetry Foundation
+
+`MonitoringState` and `PipelineRun` remain the authoritative current/live
+state. A separate SQLite database stores only normalized historical lifecycle
+events that can be established from that live evidence; the dashboard does
+not read current runtime state from SQLite.
+
+The database path is configured with `DASHBOARD_HISTORY_DB_PATH`. Local
+development defaults to `.data/dashboard_history.db`, which is ignored by
+Git. The Kubernetes workload sets the path to `/data/dashboard_history.db`
+and mounts `/data` from the `m-devops-dashboard-history` ReadWriteOnce PVC.
+The volume therefore preserves telemetry when the dashboard Pod is replaced.
+
+Recording is idempotent and runs only after a complete monitoring observation
+has produced its authoritative `PipelineRun`. Persistence failures are logged
+without replacing or invalidating live monitoring state. The stored events
+are the evidence foundation for derived DORA calculations.
+
+Historical telemetry now also supports a derived seven-UTC-calendar-day DORA
+view. Deployment frequency, lead-time evidence, change failure rate, and MTTR
+are calculated only from qualifying normalized events; the aggregation does
+not replace `MonitoringState` or `PipelineRun` as live state. The Overview KPI
+header presents this seven-day historical view while System Health continues
+to use the current live monitoring state.
+
+Synthetic lab history is available only through the explicit
+`python -m scripts.seed_dashboard_history` command. Seeded rows are marked
+`synthetic = true`, use deterministic event IDs, and remain distinguishable
+from automatically recorded production evidence. Application startup never
+seeds history automatically.
+
 ### Development Refresh Mode and Viewer Synchronization
 
 The global `Live Refresh` control changes scheduling only:

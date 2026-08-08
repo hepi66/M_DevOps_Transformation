@@ -98,7 +98,10 @@ if selected_page == "overview":
         "and outcomes of the M-DevOps Transformation project.",
     )
 
-    render_summary_cards()
+    overview_monitoring_state = ensure_monitoring_state(
+        automatic=live_refresh,
+    )
+    render_summary_cards(overview_monitoring_state)
 
     monitoring_state = render_pipeline_monitoring_fragment()
 

@@ -1,3 +1,4 @@
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -11,6 +12,7 @@ from dashboard import (
     pipeline,
 )
 from dashboard import operational_detail_viewer as viewer
+from dashboard.dora_metrics import DailyDoraBucket, DoraMetrics
 from dashboard.layout import (
     OPERATIONAL_SOURCE_LEGEND,
     PIPELINE_CONTEXT_ACCENT,
@@ -20,6 +22,7 @@ from dashboard.layout import (
     status_presentation,
 )
 from dashboard.lifecycle import aggregate_pipeline_run
+from dashboard.monitoring import MonitoringState
 from dashboard.operational_events import (
     OperationalEvent,
     order_operational_events,
@@ -605,6 +608,227 @@ def test_ghcr_images_card_renders_neutral_placeholder(monkeypatch):
     )
     overview_cards.st.markdown.assert_not_called()
     overview_cards.st.link_button.assert_not_called()
+
+
+def _summary_monitoring_state(
+    *,
+    argocd_availability="available",
+    sync_status="Synced",
+    health_status="Healthy",
+    kubernetes_availability="available",
+    ready_replicas=1,
+    desired_replicas=1,
+):
+    now = datetime(2026, 8, 8, 8, 0, tzinfo=timezone.utc)
+    snapshot = {
+        "argocd": {
+            "availability": argocd_availability,
+            "sync_status": sync_status,
+            "health_status": health_status,
+        },
+        "kubernetes": {
+            "availability": kubernetes_availability,
+            "desired_replicas": desired_replicas,
+            "ready_replicas": ready_replicas,
+            "available_replicas": ready_replicas,
+        },
+        "refreshed_at": now.isoformat(),
+    }
+    return MonitoringState(
+        snapshot=snapshot,
+        pipeline_run=aggregate_pipeline_run(snapshot),
+        last_attempt=now,
+        last_success=now,
+        next_refresh=now + timedelta(seconds=45),
+    )
+
+
+def _dora_metrics(
+    *,
+    successful=3,
+    failed=1,
+    lead_time=860,
+    failure_rate=0.25,
+    mttr=1200,
+    incidents=1,
+    recoveries=1,
+    real_events=0,
+    synthetic_events=6,
+):
+    buckets = tuple(
+        DailyDoraBucket(
+            day=date(2026, 8, 2) + timedelta(days=index),
+            deployment_count=(1, 1, 0, 0, 1, 0, 0)[index],
+            failed_deployment_count=(0, 0, 0, 1, 0, 0, 0)[index],
+            lead_time_average_seconds=(1080, 840, None, None, 660, None, None)[
+                index
+            ],
+            incident_count=(0, 0, 0, 1, 0, 0, 0)[index],
+            recovery_count=(0, 0, 0, 1, 0, 0, 0)[index],
+        )
+        for index in range(7)
+    )
+    return DoraMetrics(
+        observation_start=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        observation_end=datetime(2026, 8, 9, tzinfo=timezone.utc),
+        deployment_frequency=successful / 7,
+        successful_deployments=successful,
+        failed_deployments=failed,
+        lead_time_average_seconds=lead_time,
+        change_failure_rate=failure_rate,
+        mttr_seconds=mttr,
+        incident_count=incidents,
+        recovery_count=recoveries,
+        daily_buckets=buckets,
+        evidence_counts={},
+        real_event_count=real_events,
+        synthetic_event_count=synthetic_events,
+    )
+
+
+def test_summary_kpis_use_derived_dora_values_and_seven_buckets():
+    kpis = overview_cards.build_summary_kpis(
+        _summary_monitoring_state(),
+        _dora_metrics(),
+    )
+
+    assert tuple(kpi.title for kpi in kpis) == overview_cards.SUMMARY_CARD_TITLES
+    assert [kpi.value for kpi in kpis[:4]] == ["3", "14m 20s", "25%", "20m"]
+    assert kpis[0].context == "deployments · Last 7 days"
+    assert kpis[2].context == "1 failed of 4 deployments"
+    assert kpis[3].context == "1 recovered incident"
+    assert all(len(kpi.trend) == 7 for kpi in kpis[:4])
+    assert kpis[0].trend == (1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+
+
+def test_summary_kpis_handle_empty_historical_evidence():
+    metrics = _dora_metrics(
+        successful=0,
+        failed=0,
+        lead_time=None,
+        failure_rate=None,
+        mttr=None,
+        incidents=0,
+        recoveries=0,
+        synthetic_events=0,
+    )
+
+    kpis = overview_cards.build_summary_kpis(_summary_monitoring_state(), metrics)
+
+    assert kpis[0].value == "0"
+    assert kpis[1].value == "Not enough data"
+    assert kpis[2].value == "Not enough data"
+    assert kpis[3].value == "No recovery history"
+
+
+def test_summary_kpis_do_not_hardcode_example_values():
+    metrics = _dora_metrics(
+        successful=8,
+        failed=2,
+        lead_time=90,
+        failure_rate=0.2,
+        mttr=3600,
+        recoveries=2,
+    )
+
+    kpis = overview_cards.build_summary_kpis(_summary_monitoring_state(), metrics)
+
+    assert [kpi.value for kpi in kpis[:4]] == ["8", "1m 30s", "20%", "1h"]
+    assert kpis[2].context == "2 failed of 10 deployments"
+    assert kpis[3].context == "2 recovered incidents"
+
+
+def test_summary_kpis_treat_storage_failure_as_unavailable():
+    kpis = overview_cards.build_summary_kpis(_summary_monitoring_state(), None)
+
+    assert all(kpi.value == "Unavailable" for kpi in kpis[:4])
+    assert kpis[-1].value == "Healthy"
+
+
+def test_dora_loading_failure_isolated_from_overview(monkeypatch):
+    monkeypatch.setattr(
+        overview_cards,
+        "aggregate_dora_metrics",
+        Mock(side_effect=OSError("history unavailable")),
+    )
+
+    assert overview_cards._load_dora_metrics() is None
+
+
+@pytest.mark.parametrize(
+    ("real_events", "synthetic_events", "expected"),
+    ((0, 6, "7-day lab telemetry"), (2, 4, "Observed + lab telemetry"), (2, 0, None)),
+)
+def test_historical_disclosure_is_truthful(
+    real_events,
+    synthetic_events,
+    expected,
+):
+    metrics = _dora_metrics(
+        real_events=real_events,
+        synthetic_events=synthetic_events,
+    )
+
+    assert overview_cards._history_disclosure(metrics) == expected
+
+
+def test_system_health_uses_live_argocd_and_kubernetes_evidence():
+    system_health = overview_cards.build_summary_kpis(
+        _summary_monitoring_state()
+    )[-1]
+
+    assert system_health.value == "Healthy"
+    assert system_health.context == "Argo CD Synced · 1/1 replicas ready"
+    assert system_health.evidence == "LIVE RUNTIME"
+    assert system_health.semantic == "healthy"
+    assert system_health.accent == "#22C55E"
+
+
+def test_system_health_provider_unavailable_is_intentional():
+    system_health = overview_cards.build_summary_kpis(
+        _summary_monitoring_state(kubernetes_availability="unavailable")
+    )[-1]
+
+    assert system_health.value == "Unavailable"
+    assert system_health.semantic == "unavailable"
+    assert "evidence required" in system_health.context
+
+
+def test_system_health_degradation_uses_failure_semantics():
+    system_health = overview_cards.build_summary_kpis(
+        _summary_monitoring_state(health_status="Degraded")
+    )[-1]
+
+    assert system_health.value == "Degraded"
+    assert system_health.semantic == "degraded"
+    assert system_health.accent == "#EF4444"
+
+
+def test_system_health_attention_uses_live_runtime_evidence():
+    system_health = overview_cards.build_summary_kpis(
+        _summary_monitoring_state(sync_status="OutOfSync")
+    )[-1]
+
+    assert system_health.value == "Attention"
+    assert system_health.semantic == "attention"
+
+
+def test_summary_kpi_renderer_exposes_semantic_identity(monkeypatch):
+    html_output = Mock()
+    monkeypatch.setattr(overview_cards.st, "html", html_output)
+    kpi = overview_cards.build_summary_kpis(
+        _summary_monitoring_state(),
+        _dora_metrics(),
+    )[0]
+
+    overview_cards._render_summary_kpi(kpi)
+
+    rendered = html_output.call_args.args[0]
+    assert "summary-kpi-card" in rendered
+    assert "summary-kpi-historical" in rendered
+    assert "Deployment Frequency" in rendered
+    assert rendered.count('data-day="') == 7
+    assert "Awaiting data source" not in rendered
 
 
 def test_runtime_snapshot_is_reused_by_live_consumers(monkeypatch):

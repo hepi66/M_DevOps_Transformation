@@ -36,6 +36,12 @@ spec:
             - name: http
               containerPort: 8501
               protocol: TCP
+          env:
+            - name: DASHBOARD_HISTORY_DB_PATH
+              value: /data/dashboard_history.db
+          volumeMounts:
+            - name: dashboard-history
+              mountPath: /data
           readinessProbe:
             httpGet:
               path: /_stcore/health
@@ -59,3 +65,7 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+      volumes:
+        - name: dashboard-history
+          persistentVolumeClaim:
+            claimName: m-devops-dashboard-history

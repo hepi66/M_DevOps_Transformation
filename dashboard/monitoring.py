@@ -9,6 +9,7 @@ from dashboard.cluster_providers import (
     provider_snapshot,
 )
 from dashboard.formatting import format_dashboard_timestamp
+from dashboard.historical_telemetry import record_pipeline_events_safely
 from dashboard.lifecycle import (
     ArgoCDProviderData,
     KubernetesProviderData,
@@ -169,6 +170,7 @@ def refresh_monitoring_state(
             kubernetes_observation=kubernetes,
             refresh_interval_seconds=interval,
         )
+        record_pipeline_events_safely(pipeline_run)
         return MonitoringState(
             snapshot=snapshot,
             pipeline_run=pipeline_run,
