@@ -348,6 +348,92 @@ def test_adaptive_refresh_intervals_and_next_refresh_calculation():
     assert state.next_refresh == NOW + timedelta(seconds=20)
 
 
+def test_one_refresh_cycle_preserves_all_provider_evidence():
+    snapshot = _workflow_snapshot()
+    snapshot["docker_build"] = {
+        "availability": "available",
+        "job": {
+            "name": "build",
+            "status": "completed",
+            "conclusion": "success",
+        },
+        "step": {
+            "name": "Build and push",
+            "status": "completed",
+            "conclusion": "success",
+        },
+    }
+    argocd = ArgoCDProviderData(
+        availability="available",
+        status="completed",
+        observed_revision=COMMIT_SHA,
+        sync_status="Synced",
+        health_status="Healthy",
+    )
+    kubernetes = KubernetesProviderData(
+        availability="available",
+        status="completed",
+        image=f"ghcr.io/hepi66/m_devops_transformation:{COMMIT_SHA}",
+        image_tag=COMMIT_SHA,
+        image_digest="sha256:abc",
+        desired_replicas=1,
+        ready_replicas=1,
+    )
+    clear_snapshot = Mock()
+    snapshot_loader = Mock(return_value=snapshot)
+    cluster_loader = Mock(return_value=(argocd, kubernetes))
+
+    state = monitoring.refresh_monitoring_state(
+        now=NOW,
+        snapshot_loader=snapshot_loader,
+        cluster_loader=cluster_loader,
+        clear_snapshot=clear_snapshot,
+    )
+
+    clear_snapshot.assert_called_once_with()
+    snapshot_loader.assert_called_once_with()
+    cluster_loader.assert_called_once_with()
+    assert state.snapshot["github_actions"]["availability"] == "available"
+    assert state.snapshot["docker_build"]["availability"] == "available"
+    assert state.snapshot["ghcr"]["availability"] == "available"
+    assert state.snapshot["argocd"]["availability"] == "available"
+    assert state.snapshot["kubernetes"]["availability"] == "available"
+    assert all(
+        state.pipeline_run.stage(identifier).status == "Completed"
+        for identifier in (
+            "github",
+            "ci",
+            "build",
+            "ghcr",
+            "argocd",
+            "kubernetes",
+        )
+    )
+
+
+def test_initial_state_population_and_reuse_are_authoritative(monkeypatch):
+    refreshed = monitoring.refresh_monitoring_state(
+        now=NOW,
+        snapshot_loader=Mock(return_value=_workflow_snapshot()),
+        cluster_loader=Mock(return_value=_unavailable_cluster_observations()),
+        clear_snapshot=Mock(),
+    )
+    refresh = Mock(return_value=refreshed)
+    session_state = {}
+    monkeypatch.setattr(monitoring.st, "session_state", session_state)
+    monkeypatch.setattr(monitoring, "refresh_monitoring_state", refresh)
+
+    initial = monitoring.ensure_monitoring_state(now=NOW)
+    repeated = monitoring.ensure_monitoring_state(
+        now=NOW + timedelta(seconds=1),
+    )
+
+    assert initial is refreshed
+    assert repeated is initial
+    assert session_state[monitoring.MONITORING_STATE_KEY] is initial
+    refresh.assert_called_once_with(None, now=NOW)
+
+
 def test_no_provider_retrieval_occurs_before_refresh_is_due(monkeypatch):
     pipeline_run = aggregate_pipeline_run(_workflow_snapshot())
     current = monitoring.MonitoringState(
