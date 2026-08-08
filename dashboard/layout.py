@@ -142,9 +142,12 @@ def render_dashboard_styles() -> None:
 }}
 [class*="st-key-pipeline-stage-card-"]
 [class*="st-key-pipeline-stage-"] button p {{
-    font-size: 1.25rem;
+    font-size: clamp(0.82rem, 1vw, 1.1rem);
     font-weight: 700;
     line-height: 1.1;
+    overflow-wrap: normal;
+    white-space: nowrap;
+    word-break: keep-all;
 }}
 [class*="st-key-pipeline-stage-card-"]
 [class*="st-key-pipeline-stage-"] button:hover p,
@@ -157,6 +160,142 @@ def render_dashboard_styles() -> None:
 .stHeading h3 {{
     font-size: 1.5rem;
 }}
+.summary-kpi-card {{
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    height: 232px;
+    padding: 1rem;
+    overflow: hidden;
+    border: 1px solid color-mix(
+        in srgb,
+        var(--summary-kpi-accent) 38%,
+        rgba(128, 128, 128, 0.32)
+    );
+    border-radius: 0.6rem;
+    background:
+        linear-gradient(
+            145deg,
+            color-mix(
+                in srgb,
+                var(--summary-kpi-accent) 10%,
+                transparent
+            ),
+            transparent 58%
+        ),
+        var(--secondary-background-color);
+    box-shadow: inset 0 2px 0 color-mix(
+        in srgb,
+        var(--summary-kpi-accent) 72%,
+        transparent
+    );
+}}
+.summary-kpi-header {{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}}
+.summary-kpi-icon {{
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border-radius: 0.55rem;
+    background: color-mix(
+        in srgb,
+        var(--summary-kpi-accent) 18%,
+        transparent
+    );
+    color: var(--summary-kpi-accent);
+    font-size: 1.45rem;
+    font-weight: 750;
+}}
+.summary-kpi-evidence {{
+    color: color-mix(
+        in srgb,
+        var(--summary-kpi-accent) 78%,
+        currentColor
+    );
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.055em;
+    text-align: right;
+}}
+.summary-kpi-card h3 {{
+    margin: 0.8rem 0 0.45rem;
+    font-size: 0.95rem;
+    font-weight: 650;
+    line-height: 1.2;
+}}
+.summary-kpi-value {{
+    color: var(--summary-kpi-accent);
+    font-size: clamp(1.55rem, 1.9vw, 2.15rem);
+    font-weight: 750;
+    line-height: 1.12;
+}}
+.summary-kpi-unavailable .summary-kpi-value,
+.summary-kpi-insufficient .summary-kpi-value {{
+    font-size: clamp(1.05rem, 1.25vw, 1.4rem);
+    overflow-wrap: anywhere;
+}}
+.summary-kpi-card p {{
+    margin: 0.3rem 0 0.65rem;
+    color: rgba(160, 160, 160, 0.95);
+    font-size: 0.78rem;
+    line-height: 1.35;
+}}
+.summary-kpi-trend {{
+    display: flex;
+    height: 2.15rem;
+    margin-top: auto;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.32rem;
+    border-bottom: 1px solid color-mix(
+        in srgb,
+        var(--summary-kpi-accent) 18%,
+        transparent
+    );
+}}
+.summary-kpi-trend-bar {{
+    width: 100%;
+    min-height: 0.16rem;
+    border-radius: 0.16rem 0.16rem 0 0;
+    background: color-mix(
+        in srgb,
+        var(--summary-kpi-accent) 82%,
+        transparent
+    );
+}}
+.summary-kpi-trend-missing {{
+    background: color-mix(
+        in srgb,
+        currentColor 16%,
+        transparent
+    );
+}}
+.summary-kpi-live-strip {{
+    display: flex;
+    height: 2.15rem;
+    margin-top: auto;
+    align-items: center;
+    gap: 0.38rem;
+}}
+.summary-kpi-live-strip span {{
+    display: block;
+    width: 0.44rem;
+    height: 0.44rem;
+    border-radius: 50%;
+    background: var(--summary-kpi-accent);
+    box-shadow: 0 0 0.6rem color-mix(
+        in srgb,
+        var(--summary-kpi-accent) 55%,
+        transparent
+    );
+}}
+.summary-kpi-live-strip span:nth-child(2) {{ opacity: 0.62; }}
+.summary-kpi-live-strip span:nth-child(3) {{ opacity: 0.3; }}
 .st-key-delivery-pipeline-grid .stMarkdownBadge {{
     padding-inline: 0.25rem !important;
     font-size: 0.875rem !important;

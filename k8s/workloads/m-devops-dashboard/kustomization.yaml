@@ -4,5 +4,6 @@ resources:
   - namespace.yaml
   - serviceaccount.yaml
   - rbac.yaml
+  - pvc.yaml
   - deployment.yaml
   - service.yaml

@@ -13,6 +13,9 @@ venv/
 *.pyc
 *.pyo
 
+# Local persistent dashboard telemetry
+/.data/
+
 # Betriebssystem-spezifische Dateien
 Thumbs.db
 
