@@ -20,7 +20,7 @@ PIPELINE_STAGE_ICONS = {
     "argocd": ASSET_DIRECTORY / "argocd.svg",
     "kubernetes": ASSET_DIRECTORY / "kubernetes.svg",
 }
-PIPELINE_CARD_HEIGHT = 300
+PIPELINE_CARD_HEIGHT = 252
 PIPELINE_COLUMN_WIDTHS = tuple(
     width
     for index in range(7)
@@ -64,7 +64,7 @@ def _render_product_stage_card(
     card = st.container(
         horizontal_alignment="center",
         vertical_alignment="center",
-        gap="medium",
+        gap="small",
     )
     if card.button(
         stage.display_name,
@@ -74,15 +74,10 @@ def _render_product_stage_card(
     ):
         _select_stage(stage)
 
-    _render_product_icon(card, icon_path, width=64)
+    _render_product_icon(card, icon_path, width=56)
 
-    supporting_label = (
-        f"{stage.platform} · {stage.details}"
-        if stage.status == "Unavailable" and stage.details
-        else stage.platform
-    )
     card.caption(
-        supporting_label,
+        stage.platform,
         width="content",
         text_alignment="center",
     )

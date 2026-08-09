@@ -1984,7 +1984,7 @@ def test_ci_pipeline_renderer_uses_badge_icon_and_existing_stage(monkeypatch):
 
     header.image.assert_called_once_with(
         str(pipeline.CI_WORKFLOW_ICON),
-        width=64,
+        width=56,
     )
     header.button.assert_called_once_with(
         "CI",
@@ -2150,11 +2150,11 @@ def test_shared_stage_renderer_uses_product_identity_and_badge(monkeypatch):
     streamlit.container.assert_called_once_with(
         horizontal_alignment="center",
         vertical_alignment="center",
-        gap="medium",
+        gap="small",
     )
     streamlit.container.return_value.image.assert_called_once_with(
         str(pipeline.PIPELINE_STAGE_ICONS["github"]),
-        width=64,
+        width=56,
     )
     streamlit.container.return_value.caption.assert_called_once_with(
         "GitHub",
