@@ -50,13 +50,13 @@ def render_overview_monitoring_fragment() -> None:
     render_summary_cards(monitoring_state)
 
     with st.container(border=True):
+        render_delivery_pipeline(monitoring_state.pipeline_run)
         if render_monitoring_status(
             monitoring_state,
             automatic=live_refresh,
         ):
             request_monitoring_refresh()
             st.rerun()
-        render_delivery_pipeline(monitoring_state.pipeline_run)
 
     overview_column, logs_column = st.columns(
         [1, 2],

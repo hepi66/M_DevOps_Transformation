@@ -150,6 +150,19 @@ def render_dashboard_styles() -> None:
     word-break: keep-all;
 }}
 [class*="st-key-pipeline-stage-card-"]
+[data-testid="stCaptionContainer"] {{
+    align-self: center;
+    width: max-content !important;
+    max-width: none !important;
+}}
+[class*="st-key-pipeline-stage-card-"]
+[data-testid="stCaptionContainer"] p {{
+    font-size: 0.75rem;
+    overflow-wrap: normal;
+    white-space: nowrap;
+    word-break: keep-all;
+}}
+[class*="st-key-pipeline-stage-card-"]
 [class*="st-key-pipeline-stage-"] button:hover p,
 [class*="st-key-pipeline-stage-card-"]
 [class*="st-key-pipeline-stage-"] button:active p,
@@ -312,7 +325,7 @@ def render_dashboard_styles() -> None:
 > [data-testid="stHorizontalBlock"]
 > [data-testid="stColumn"]:nth-child(even)
 > [data-testid="stVerticalBlock"] {{
-    height: 300px;
+    height: 252px;
     justify-content: center;
 }}
 .st-key-delivery-pipeline-grid
