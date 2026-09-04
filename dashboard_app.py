@@ -71,7 +71,7 @@ def render_overview_monitoring_fragment() -> None:
             )
 
         with st.container(border=True, height="stretch"):
-            render_environments()
+            render_environments(monitoring_state.pipeline_run)
 
     with logs_column, st.container(
         border=True,

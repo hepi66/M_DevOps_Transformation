@@ -156,7 +156,26 @@ def test_environments_render_as_one_compact_runtime_table(monkeypatch):
     monkeypatch.setattr(environments.st, "caption", Mock())
     monkeypatch.setattr(environments, "render_component_header", component_header)
 
-    environments.render_environments()
+    commit_sha = "a" * 40
+    pipeline_run = aggregate_pipeline_run(
+        {
+            "argocd": {
+                "availability": "available",
+                "sync_status": "Synced",
+                "health_status": "Healthy",
+            },
+            "kubernetes": {
+                "availability": "available",
+                "image": f"ghcr.io/example/dashboard:{commit_sha}",
+                "image_tag": commit_sha,
+                "desired_replicas": 1,
+                "available_replicas": 1,
+                "ready_replicas": 1,
+            },
+        }
+    )
+
+    environments.render_environments(pipeline_run)
 
     rendered = html_output.call_args.args[0]
     assert rendered.count('<table class="environment-overview"') == 1
@@ -164,53 +183,46 @@ def test_environments_render_as_one_compact_runtime_table(monkeypatch):
         f'<th scope="col">{label}</th>' in rendered
         for label in ("Environment", "Health", "Pods", "State")
     )
-    positions = [
-        rendered.index(environment["environment"])
-        for environment in environments.ENVIRONMENTS
-    ]
-    assert positions == sorted(positions)
-    assert rendered.count('class="environment-name"') == len(
-        environments.ENVIRONMENTS
-    )
-    for environment in environments.ENVIRONMENTS:
-        assert f"<td>{environment['pods']}</td>" in rendered
+    assert rendered.count('class="environment-name"') == 1
+    assert "production" in rendered
+    assert all(name not in rendered for name in ("staging", "preview", "development"))
+    assert "<td>1 / 1</td>" in rendered
     healthy = status_presentation("Healthy")
-    deploying = status_presentation("Deploying")
     assert rendered.count(
         f'class="environment-health"><span '
         f'class="environment-status-symbol" aria-hidden="true" '
         f'style="color: {healthy["color"]}">{healthy["symbol"]}</span> '
         f'{healthy["label"]}</td>'
-    ) == 3
+    ) == 1
     assert (
         f'class="environment-state"><span '
         f'class="environment-status-symbol" aria-hidden="true" '
-        f'style="color: {deploying["color"]}">{deploying["symbol"]}</span> '
-        f'{deploying["label"]}</td>'
+        f'style="color: {healthy["color"]}">{healthy["symbol"]}</span> '
+        "Synced</td>"
     ) in rendered
-    preview_row = rendered.split(
-        '<td class="environment-name">preview</td>',
-        maxsplit=1,
-    )[1].split("</tr>", maxsplit=1)[0]
-    assert (
-        '<td class="environment-health">'
-        '<span class="environment-neutral">—</span></td>'
-    ) in preview_row
-    assert deploying["label"] in preview_row
-    assert rendered.count('class="environment-neutral"') == 4
-    assert (
-        '<span class="environment-neutral environment-status-symbol"'
-        not in rendered
-    )
     assert all(
         color not in rendered
         for color in PIPELINE_STAGE_CONTEXT_COLORS.values()
     )
     component_header.assert_called_once_with(
         "Environments",
-        "DEMO",
+        "LIVE",
         key="dashboard-component-header-environments",
     )
+
+
+def test_environments_render_honest_fallback_without_live_evidence(monkeypatch):
+    html_output = Mock()
+    monkeypatch.setattr(environments.st, "html", html_output)
+    monkeypatch.setattr(environments, "render_component_header", Mock())
+
+    environments.render_environments(aggregate_pipeline_run({}))
+
+    rendered = html_output.call_args.args[0]
+    assert rendered.count('class="environment-name"') == 1
+    assert "production" in rendered
+    assert "<td>—</td>" in rendered
+    assert rendered.count('class="environment-neutral"') == 2
 
 
 def _docker_snapshot(
