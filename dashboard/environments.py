@@ -2,36 +2,50 @@ import html
 
 import streamlit as st
 
+from dashboard.deployment_page import build_deployment_page_state
 from dashboard.layout import render_component_header, status_presentation
+from dashboard.lifecycle import PipelineRun
 
-ENVIRONMENTS = (
-    {
+
+def _replica_summary(pipeline_run: PipelineRun) -> str:
+    ready = pipeline_run.kubernetes.ready_replicas
+    desired = pipeline_run.kubernetes.desired_replicas
+    if ready is None or desired is None:
+        return "—"
+    return f"{ready} / {desired}"
+
+
+def _rendered_status(status: str | None) -> str:
+    normalized = str(status or "Unavailable").lower()
+    if normalized in {"healthy", "synced"}:
+        presentation = status_presentation("Healthy")
+    elif normalized in {"running", "progressing"}:
+        presentation = status_presentation("Deploying")
+    elif normalized == "outofsync":
+        presentation = status_presentation("Testing")
+    else:
+        return '<span class="environment-neutral">—</span>'
+    label = html.escape(str(status))
+    symbol = html.escape(presentation["symbol"])
+    color = html.escape(presentation["color"], quote=True)
+    return (
+        '<span class="environment-status-symbol" aria-hidden="true" '
+        f'style="color: {color}">{symbol}</span> {label}'
+    )
+
+
+def render_environments(pipeline_run: PipelineRun) -> None:
+    """Render the live production environment from normalized runtime data."""
+    page_state = build_deployment_page_state(pipeline_run)
+    environment = {
         "environment": "production",
-        "status": "Healthy",
-        "pods": "12 / 12",
-    },
-    {
-        "environment": "staging",
-        "status": "Healthy",
-        "pods": "8 / 8",
-    },
-    {
-        "environment": "preview",
-        "status": "Deploying",
-        "pods": "3 / 4",
-    },
-    {
-        "environment": "development",
-        "status": "Healthy",
-        "pods": "6 / 6",
-    },
-)
-
-def render_environments() -> None:
-    """Render the static Phase 1 environment demonstration."""
+        "health": page_state.overall_status,
+        "pods": _replica_summary(pipeline_run),
+        "state": pipeline_run.argocd.sync_status,
+    }
     render_component_header(
         "Environments",
-        "DEMO",
+        "LIVE",
         key="dashboard-component-header-environments",
     )
 
@@ -90,28 +104,18 @@ def render_environments() -> None:
 """
     ]
 
-    for environment in ENVIRONMENTS:
-        name = html.escape(environment["environment"])
-        pods = html.escape(environment["pods"])
-        presentation = status_presentation(environment["status"])
-        status = html.escape(presentation["label"])
-        symbol = html.escape(presentation["symbol"])
-        color = html.escape(presentation["color"], quote=True)
-        rendered_status = (
-            '<span class="environment-status-symbol" aria-hidden="true" '
-            f'style="color: {color}">{symbol}</span> {status}'
-        )
-        neutral = '<span class="environment-neutral">—</span>'
-        health = rendered_status if status == "Healthy" else neutral
-        state = rendered_status if status == "Deploying" else neutral
-        rows.append(
-            "<tr>"
-            f'<td class="environment-name">{name}</td>'
-            f'<td class="environment-health">{health}</td>'
-            f"<td>{pods}</td>"
-            f'<td class="environment-state">{state}</td>'
-            "</tr>"
-        )
+    name = html.escape(environment["environment"])
+    pods = html.escape(environment["pods"])
+    health = _rendered_status(environment["health"])
+    state = _rendered_status(environment["state"])
+    rows.append(
+        "<tr>"
+        f'<td class="environment-name">{name}</td>'
+        f'<td class="environment-health">{health}</td>'
+        f"<td>{pods}</td>"
+        f'<td class="environment-state">{state}</td>'
+        "</tr>"
+    )
 
     rows.append("</tbody></table>")
     st.html("\n".join(rows))
