@@ -16,6 +16,8 @@ Welcome to the official **Engineering Documentation Portal** of the **M-DevOps T
 
 This portal is the central entry point for all engineering documentation.
 
+The M-DevOps Dashboard has reached its beta release milestone.
+
 Whether you want to understand the architecture, rebuild the platform, operate the system or troubleshoot a deployment, this portal will guide you to the appropriate documentation.
 
 ---
