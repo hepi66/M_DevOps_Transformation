@@ -16,7 +16,6 @@ from dashboard.dora_metrics import DailyDoraBucket, DoraMetrics
 from dashboard.layout import (
     OPERATIONAL_SOURCE_LEGEND,
     PIPELINE_CONTEXT_ACCENT,
-    SEMANTIC_STATUS_COLORS,
     STATUS_LEGEND,
     STATUS_PRESENTATION,
     status_presentation,
@@ -53,7 +52,33 @@ def test_deployments_render_as_one_compact_table(monkeypatch):
     monkeypatch.setattr(deployments.st, "caption", Mock())
     monkeypatch.setattr(deployments, "render_component_header", component_header)
 
-    deployments.render_deployments()
+    commit_sha = "a" * 40
+    deployed_at = datetime(2026, 9, 4, 10, 0, tzinfo=timezone.utc)
+    pipeline_run = aggregate_pipeline_run(
+        {
+            "argocd": {
+                "availability": "available",
+                "sync_status": "Synced",
+                "health_status": "Healthy",
+                "operation_phase": "Succeeded",
+                "operation_at": deployed_at.isoformat(),
+            },
+            "kubernetes": {
+                "availability": "available",
+                "namespace": "m-devops-dashboard",
+                "image": f"ghcr.io/example/dashboard:{commit_sha}",
+                "image_tag": commit_sha,
+                "desired_replicas": 1,
+                "available_replicas": 1,
+                "ready_replicas": 1,
+            },
+        }
+    )
+
+    deployments.render_deployments(
+        pipeline_run,
+        observed_at=deployed_at + timedelta(minutes=9),
+    )
 
     rendered = html_output.call_args.args[0]
     assert rendered.count('<table class="deployment-overview"') == 1
@@ -61,66 +86,46 @@ def test_deployments_render_as_one_compact_table(monkeypatch):
         f'<th scope="col">{label}</th>' in rendered
         for label in ("Environment", "Status", "Version", "Age")
     )
-    positions = [
-        rendered.index(deployment["environment"])
-        for deployment in deployments.DEPLOYMENTS
-    ]
-    assert positions == sorted(positions)
-    assert rendered.count('class="deployment-environment"') == len(
-        deployments.DEPLOYMENTS
-    )
-    assert rendered.count("<td>—</td>") == len(deployments.DEPLOYMENTS) + 1
-    for deployment in deployments.DEPLOYMENTS:
-        presentation = status_presentation(deployment["status"])
-        assert presentation["label"] in rendered
-        assert presentation["symbol"] in rendered
+    assert rendered.count('class="deployment-environment"') == 1
+    assert "production" in rendered
+    assert "Healthy" in rendered
+    assert "aaaaaaa" in rendered
+    assert "9m" in rendered
+    assert all(name not in rendered for name in ("staging", "development", "preview"))
     component_header.assert_called_once_with(
         "Deployments",
-        "DEMO",
+        "LIVE",
         key="dashboard-component-header-deployments",
     )
 
 
-def test_deployment_demo_data_includes_preview_in_required_order():
-    assert deployments.DEPLOYMENTS == (
-        {
-            "environment": "production",
-            "status": "Healthy",
-            "version": "v1.24.7",
-        },
-        {
-            "environment": "staging",
-            "status": "Deploying",
-            "version": "v1.24.8",
-        },
-        {
-            "environment": "development",
-            "status": "Testing",
-            "version": "v1.24.9",
-        },
-        {
-            "environment": "preview",
-            "status": "Deploying",
-            "version": "—",
-        },
+def test_deployment_age_uses_neutral_fallback_for_missing_or_invalid_time():
+    observed_at = datetime(2026, 9, 4, 10, 0, tzinfo=timezone.utc)
+
+    assert deployments._format_deployment_age(None, observed_at) == "—"
+    assert (
+        deployments._format_deployment_age(
+            observed_at + timedelta(minutes=1),
+            observed_at,
+        )
+        == "—"
     )
 
 
-def test_deployment_status_vocabulary_covers_current_demo_data():
-    current_statuses = {
-        deployment["status"].lower()
-        for deployment in deployments.DEPLOYMENTS
-    }
-    assert current_statuses == set(STATUS_PRESENTATION)
-    for status in current_statuses:
-        presentation = status_presentation(status)
-        assert presentation["label"]
-        assert presentation["symbol"]
-        assert presentation["semantic"] in SEMANTIC_STATUS_COLORS
-        assert (
-            presentation["color"]
-            == SEMANTIC_STATUS_COLORS[presentation["semantic"]]
-        )
+def test_deployments_render_honest_fallback_without_live_evidence(monkeypatch):
+    html_output = Mock()
+    monkeypatch.setattr(deployments.st, "html", html_output)
+    monkeypatch.setattr(deployments, "render_component_header", Mock())
+
+    deployments.render_deployments(
+        aggregate_pipeline_run({}),
+        observed_at=datetime(2026, 9, 4, 10, 0, tzinfo=timezone.utc),
+    )
+
+    rendered = html_output.call_args.args[0]
+    assert "Unavailable" in rendered
+    assert rendered.count("<td>—</td>") == 2
+    assert rendered.count('class="deployment-environment"') == 1
 
 
 def test_deployment_status_vocabulary_uses_no_pipeline_context_colors():
