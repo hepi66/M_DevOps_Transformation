@@ -31,6 +31,17 @@ def _complete_snapshot() -> dict:
                 "startedAt": "2026-07-26T10:50:05Z",
                 "updatedAt": "2026-07-26T10:52:30Z",
             },
+            "runs": [
+                {
+                    "name": "CI Pipeline",
+                    "headSha": COMMIT_SHA,
+                    "headBranch": "main",
+                    "event": "push",
+                    "status": "completed",
+                    "conclusion": "success",
+                    "createdAt": "2026-07-26T10:50:00Z",
+                }
+            ],
             "jobs": [
                 {
                     "name": "build",
@@ -78,6 +89,8 @@ def _complete_snapshot() -> dict:
             "namespace": "m-devops-dashboard",
             "sync_status": "Synced",
             "health_status": "Healthy",
+            "operation_phase": "Succeeded",
+            "operation_at": "2026-07-26T10:53:00Z",
             "observed_at": "2026-07-26T10:53:00Z",
         },
         "kubernetes": {
@@ -113,6 +126,7 @@ def test_provider_normalization_preserves_identifiers_and_hierarchy():
     assert github.commit_sha == COMMIT_SHA
     assert github.workflow_run_id == "85"
     assert github.jobs[0].steps[0].name == "Build and push"
+    assert github.workflow_runs[0].event == "push"
     assert ghcr.tags == ("latest", COMMIT_SHA)
     assert argocd.observed_revision == COMMIT_SHA
     assert kubernetes.pods[0].ready is True
@@ -129,6 +143,30 @@ def test_pipeline_run_correlates_complete_lifecycle_by_commit_sha():
     assert pipeline_run.pod_information[0].phase == "Running"
     assert pipeline_run.refresh_status == "success"
     assert pipeline_run.duration_seconds == 145
+    assert pipeline_run.lead_time_seconds == 180
+
+
+def test_release_lead_time_requires_exact_successful_main_push_run():
+    for field, value in (
+        ("headSha", "b" * 40),
+        ("headBranch", "feature/example"),
+        ("event", "pull_request"),
+        ("status", "in_progress"),
+        ("conclusion", "failure"),
+    ):
+        snapshot = _complete_snapshot()
+        snapshot["github_actions"]["runs"][0][field] = value
+
+        assert aggregate_pipeline_run(snapshot).lead_time_seconds is None
+
+
+def test_release_lead_time_rejects_deployment_before_workflow_creation():
+    snapshot = _complete_snapshot()
+    snapshot["github_actions"]["runs"][0]["createdAt"] = (
+        "2026-07-26T10:54:00Z"
+    )
+
+    assert aggregate_pipeline_run(snapshot).lead_time_seconds is None
 
 
 def test_pipeline_stage_mapping_is_deterministic():

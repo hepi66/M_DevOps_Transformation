@@ -314,6 +314,7 @@ def events_from_pipeline_run(
                 environment=environment,
                 source="argocd",
                 status="succeeded",
+                duration_seconds=pipeline_run.lead_time_seconds,
                 metadata=metadata or None,
             ),
         )
