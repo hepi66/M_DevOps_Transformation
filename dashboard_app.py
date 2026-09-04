@@ -27,7 +27,7 @@ from dashboard.pipeline import render_delivery_pipeline
 from dashboard.pipeline_context import synchronize_active_pipeline_stage
 
 st.set_page_config(
-    page_title="M-DevOps Dashboard",
+    page_title="M-DevOps Dashboard · Beta",
     page_icon="📊",
     layout="wide",
 )
