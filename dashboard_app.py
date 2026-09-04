@@ -65,7 +65,10 @@ def render_overview_monitoring_fragment() -> None:
 
     with overview_column:
         with st.container(border=True, height="stretch"):
-            render_deployments()
+            render_deployments(
+                monitoring_state.pipeline_run,
+                observed_at=monitoring_state.last_attempt,
+            )
 
         with st.container(border=True, height="stretch"):
             render_environments()
