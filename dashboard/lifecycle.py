@@ -46,6 +46,19 @@ class WorkflowJob:
 
 
 @dataclass(frozen=True)
+class WorkflowRunEvidence:
+    """Normalized GitHub Actions evidence used for release correlation."""
+
+    workflow_name: str | None = None
+    commit_sha: str | None = None
+    branch: str | None = None
+    event: str | None = None
+    status: str | None = None
+    conclusion: str | None = None
+    created_at: datetime | None = None
+
+
+@dataclass(frozen=True)
 class GitHubProviderData:
     """Normalized repository and GitHub Actions observation."""
 
@@ -63,6 +76,7 @@ class GitHubProviderData:
     started_at: datetime | None = None
     completed_at: datetime | None = None
     jobs: tuple[WorkflowJob, ...] = ()
+    workflow_runs: tuple[WorkflowRunEvidence, ...] = ()
     reason: str | None = None
 
 
@@ -170,6 +184,7 @@ class PipelineRun:
     started_at: datetime | None
     completed_at: datetime | None
     duration_seconds: int | None
+    lead_time_seconds: int | None
     last_refresh: datetime | None
     refresh_interval_seconds: int
     refresh_status: RefreshStatus
@@ -263,6 +278,18 @@ def _normalize_job(job: dict[str, Any]) -> WorkflowJob:
     )
 
 
+def _normalize_workflow_run(run: dict[str, Any]) -> WorkflowRunEvidence:
+    return WorkflowRunEvidence(
+        workflow_name=run.get("name"),
+        commit_sha=run.get("headSha"),
+        branch=run.get("headBranch"),
+        event=run.get("event"),
+        status=run.get("status"),
+        conclusion=run.get("conclusion"),
+        created_at=parse_provider_timestamp(run.get("createdAt")),
+    )
+
+
 def normalize_github_provider(snapshot: dict[str, Any]) -> GitHubProviderData:
     """Normalize the existing GitHub snapshot without performing retrieval."""
     actions = snapshot.get("github_actions")
@@ -271,6 +298,8 @@ def normalize_github_provider(snapshot: dict[str, Any]) -> GitHubProviderData:
     workflow = workflow if isinstance(workflow, dict) else {}
     jobs = actions.get("jobs")
     jobs = jobs if isinstance(jobs, list) else []
+    workflow_runs = actions.get("runs")
+    workflow_runs = workflow_runs if isinstance(workflow_runs, list) else []
 
     availability = _availability(actions.get("availability"))
     state = str(snapshot.get("state") or "").lower()
@@ -300,6 +329,11 @@ def normalize_github_provider(snapshot: dict[str, Any]) -> GitHubProviderData:
         started_at=parse_provider_timestamp(workflow.get("startedAt")),
         completed_at=parse_provider_timestamp(workflow.get("updatedAt")),
         jobs=tuple(_normalize_job(job) for job in jobs if isinstance(job, dict)),
+        workflow_runs=tuple(
+            _normalize_workflow_run(run)
+            for run in workflow_runs
+            if isinstance(run, dict)
+        ),
         reason=actions.get("reason") or snapshot.get("reason"),
     )
 
@@ -717,6 +751,37 @@ def _commit_from_image_tag(image_tag: str | None) -> str | None:
     return normalized
 
 
+def _release_lead_time_seconds(
+    github: GitHubProviderData,
+    argocd: ArgoCDProviderData,
+    kubernetes: KubernetesProviderData,
+) -> int | None:
+    """Measure successful main CI creation to its correlated deployment."""
+    release_sha = _commit_from_image_tag(kubernetes.image_tag)
+    deployed_at = argocd.operation_at
+    if not release_sha or len(release_sha) != 40 or not deployed_at:
+        return None
+
+    expected_branch = github.branch or "main"
+    matching_runs = (
+        run
+        for run in github.workflow_runs
+        if run.workflow_name == "CI Pipeline"
+        and run.commit_sha == release_sha
+        and run.branch == expected_branch
+        and run.event == "push"
+        and run.status == "completed"
+        and run.conclusion == "success"
+        and run.created_at is not None
+    )
+    release_run = next(matching_runs, None)
+    if release_run is None or release_run.created_at is None:
+        return None
+
+    duration = int((deployed_at - release_run.created_at).total_seconds())
+    return duration if duration >= 0 else None
+
+
 def aggregate_pipeline_run(
     snapshot: dict[str, Any],
     *,
@@ -821,6 +886,11 @@ def aggregate_pipeline_run(
         if started_at and completed_at
         else None
     )
+    lead_time_seconds = _release_lead_time_seconds(
+        github,
+        argocd,
+        kubernetes,
+    )
     last_refresh = parse_provider_timestamp(snapshot.get("refreshed_at"))
     next_refresh = (
         last_refresh + timedelta(seconds=refresh_interval_seconds)
@@ -872,6 +942,7 @@ def aggregate_pipeline_run(
         started_at=started_at,
         completed_at=completed_at,
         duration_seconds=duration_seconds,
+        lead_time_seconds=lead_time_seconds,
         last_refresh=last_refresh,
         refresh_interval_seconds=refresh_interval_seconds,
         refresh_status=refresh_status,

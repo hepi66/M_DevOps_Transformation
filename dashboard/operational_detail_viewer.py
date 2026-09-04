@@ -547,12 +547,14 @@ def _load_github_actions_details(
     if not workflow:
         return {
             "availability": "missing",
+            "runs": runs,
             "reason": f"No {workflow_name} workflow execution was found.",
         }
     if not workflow.get("databaseId"):
         return {
             "availability": "incomplete",
             "workflow": workflow,
+            "runs": runs,
             "reason": "The workflow run identifier is unavailable.",
         }
 
@@ -566,6 +568,7 @@ def _load_github_actions_details(
         return {
             "availability": "unavailable",
             "workflow": workflow,
+            "runs": runs,
             "reason": "GitHub Actions job information could not be retrieved.",
         }
 
@@ -585,6 +588,7 @@ def _load_github_actions_details(
         "availability": "available",
         "workflow": workflow,
         "jobs": normalized_jobs,
+        "runs": runs,
     }
 
 
@@ -762,7 +766,7 @@ def _load_github_status() -> dict[str, Any]:
             "--json",
             (
                 "databaseId,number,name,displayTitle,status,conclusion,"
-                "createdAt,startedAt,updatedAt,url,headBranch,headSha"
+                "createdAt,startedAt,updatedAt,url,headBranch,headSha,event"
             ),
         )
     )

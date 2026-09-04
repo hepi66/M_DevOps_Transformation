@@ -79,7 +79,22 @@ def _pipeline_run(
         kubernetes_status=kubernetes_status,
     )
     return aggregate_pipeline_run(
-        {},
+        {
+            "branch": "main",
+            "github_actions": {
+                "runs": [
+                    {
+                        "name": "CI Pipeline",
+                        "headSha": COMMIT_SHA,
+                        "headBranch": "main",
+                        "event": "push",
+                        "status": "completed",
+                        "conclusion": "success",
+                        "createdAt": "2026-08-08T07:47:30Z",
+                    }
+                ],
+            },
+        },
         argocd_observation=argocd,
         kubernetes_observation=kubernetes,
     )
@@ -165,7 +180,7 @@ def test_successful_deployment_uses_normalized_provider_evidence():
     assert events[0].release_sha == COMMIT_SHA
     assert events[0].environment == "m-devops-dashboard"
     assert events[0].source == "argocd"
-    assert events[0].duration_seconds is None
+    assert events[0].duration_seconds == 750
     assert events[0].synthetic is False
 
 
